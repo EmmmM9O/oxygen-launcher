@@ -29,10 +29,10 @@ void log(std::format_string<Args...> fmt, Args &&...args) {
 }
 
 template <typename... Args>
-void log_internal(std::format_string<Args...> fmt, Args &&...args,
-                  std::source_location loc = std::source_location::current()) {
+void log_internal(std::format_string<Args...> fmt, Args &&...args/*,
+                  std::source_location loc = std::source_location::current()*/) {
   std::string msg =
-      std::format("[{}/{}:{}] {}", loc.file_name(), loc.line(), loc.function_name(),
+      std::format("[OxygenLauncher] {}"/*, loc.file_name(), loc.line(), loc.function_name()*/,
                   std::format(fmt, std::forward<Args>(args)...));
   std::fprintf(oxygen->logFile, "%s\n", msg.c_str());
 }

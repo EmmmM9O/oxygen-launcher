@@ -200,6 +200,6 @@ Java_oxygen_api_LauncherBridge_getClipboardText(JNIEnv *env, jclass clazz) {
 JNIEXPORT void JNICALL
 Java_oxygen_api_LauncherBridge_createsurface(JNIEnv *env, jclass clazz) {
   getEnv(oxygen->android_jvm)
-      ->CallObjectMethod(oxygen->object_OxygenBridge, oxygen->createsurfaceID);
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->createsurfaceID);
 }
 }

@@ -72,7 +72,7 @@ class OxygenBridge {
   @Keep fun openURI(URI: String): Boolean = Core.platform.openURI(URI)
 
   @Keep
-  fun createSurface(): Unit {
+  fun createsurface(): Unit {
     Core.platform.createSurface()
   }
 

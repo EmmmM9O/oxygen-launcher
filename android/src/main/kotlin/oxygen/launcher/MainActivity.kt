@@ -1,5 +1,6 @@
 package oxygen.launcher
 
+import android.annotation.TargetApi
 import android.app.*
 import android.content.*
 import android.content.res.*
@@ -10,7 +11,6 @@ import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import android.annotation.TargetApi
 import java.io.*
 import java.lang.Thread.*
 import java.util.*
@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity(), Platform {
   val dispather = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
   lateinit var handler: Handler
   lateinit var view: RenderSurfaceView
+  @Volatile var surfaceCreated = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -93,7 +94,34 @@ class MainActivity : AppCompatActivity(), Platform {
       Core.launcher = JvmLauncher()
       Core.launcher.launch()
     }
+    while (!surfaceCreated) {}
+    Log.info("[Oxygen Launcher] Create Surface")
+    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
+    try {
+      requestWindowFeature(Window.FEATURE_NO_TITLE)
+    } catch (ex: Exception) {
+      Log.err(
+          "[OxygenLauncher] Content already displayed, cannot request FEATURE_NO_TITLE ${ex.trace()}"
+      )
+    }
+
+    window.apply {
+      setFlags(
+          WindowManager.LayoutParams.FLAG_FULLSCREEN,
+          WindowManager.LayoutParams.FLAG_FULLSCREEN,
+      )
+      clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
+    }
+
+    setContentView(view, createLayoutParams())
   }
+
+  protected fun createLayoutParams() =
+      FrameLayout.LayoutParams(
+              ViewGroup.LayoutParams.MATCH_PARENT,
+              ViewGroup.LayoutParams.MATCH_PARENT,
+          )
+          .apply { gravity = Gravity.CENTER }
 
   fun formatMemory(bytes: Long): String = "${bytes / (1024 * 1024)} MB"
 
@@ -237,6 +265,6 @@ class MainActivity : AppCompatActivity(), Platform {
   override fun openAssets(path: String): InputStream = getAssets().open(path)
 
   override fun createSurface(): Unit {
-    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
+    surfaceCreated = true
   }
 }

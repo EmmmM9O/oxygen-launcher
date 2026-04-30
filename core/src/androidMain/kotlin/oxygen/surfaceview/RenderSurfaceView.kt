@@ -1,11 +1,12 @@
 package oxygen.surfaceview
 
 import android.content.Context
+import android.graphics.PixelFormat
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.graphics.PixelFormat
 import oxygen.bridge.*
+import oxygen.util.*
 
 interface Renderer {
   fun onSurfaceCreated(surface: Surface)
@@ -53,14 +54,17 @@ constructor(
 
 class JvmRenderer(val bridge: OxygenBridge) : Renderer {
   override fun onSurfaceCreated(surface: Surface) {
+    Log.info("[OxygenLauncher]On surface create")
     bridge.onSurfaceCreated(surface as Object)
   }
 
   override fun onSurfaceChanged(surface: Surface, width: Int, height: Int) {
+    Log.info("[OxygenLauncher]On surface changed $width x $height")
     bridge.onSurfaceChanged(surface as Object, width, height)
   }
 
   override fun onSurfaceDestroyed() {
+    Log.info("[OxygenLauncher]On surface destroyed")
     bridge.onSurfaceDestroyed()
   }
 }

@@ -120,13 +120,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
                          "(Ljava/lang/String;)V");
     oxygen->onActivityResultID = env->GetMethodID(
         oxygen->class_callback, "onActivityResult", "(IILjava/lang/String;)V");
-    oxygen->onSurfaceCreatedID = env->GetStaticMethodID(
+    oxygen->onSurfaceCreatedID = env->GetMethodID(
         oxygen->class_callback, "onSurfaceCreated", "(J)V");
 
-    oxygen->onSurfaceChangedID = env->GetStaticMethodID(
+    oxygen->onSurfaceChangedID = env->GetMethodID(
         oxygen->class_callback, "onSurfaceChanged", "(II)V");
 
-    oxygen->onSurfaceDestroyedID = env->GetStaticMethodID(
+    oxygen->onSurfaceDestroyedID = env->GetMethodID(
         oxygen->class_callback, "onSurfaceDestroyed", "()V");
   }
   return JNI_VERSION_1_4;
