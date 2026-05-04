@@ -2,6 +2,7 @@ package oxygen.bridge
 
 import java.io.*
 import oxygen.*
+import oxygen.input.*
 import oxygen.util.*
 
 class OxygenBridge {
@@ -42,6 +43,16 @@ class OxygenBridge {
 
   external fun onSurfaceDestroyed(): Unit
 
+  // Input callback
+  external fun handleTouch(/*MotionEvent*/ intData: IntArray, floatData: FloatArray): Boolean
+
+  external fun handleGenericMotion(
+      /*MotionEvent*/ intData: IntArray,
+      floatData: FloatArray,
+  ): Boolean
+
+  external fun handleKey(keyCode: Int, /*KeyEvent*/ intData: IntArray): Boolean
+
   @Keep
   fun log(log: String) {
     FLog.log(log)
@@ -74,6 +85,62 @@ class OxygenBridge {
   @Keep
   fun createsurface(): Unit {
     Core.platform.createSurface()
+  }
+
+  @Keep fun isFinishing(): Boolean = Core.platform.finishing()
+
+  // Input
+  @Keep
+  fun getTextInput(
+      title: String,
+      message: String,
+      text: String,
+      numeric: Boolean,
+      multiline: Boolean,
+      maxLength: Int,
+      allowEmpty: Boolean,
+      onAccepted: Long,
+      onCanceled: Long,
+  ): Unit {
+    Core.input.getTextInput(
+        TextInputConfig(
+            title,
+            message,
+            text,
+            numeric,
+            multiline,
+            maxLength,
+            allowEmpty,
+            { str -> CallStrCons(str, onAccepted) },
+            { CallVoid(onCanceled) },
+        )
+    )
+  }
+
+  external fun CallVoid(ptr: Long): Unit
+
+  external fun CallStrCons(text: String, ptr: Long): Unit
+
+  @Keep fun isShowingTextInput(): Boolean = Core.input.isShowingTextInput()
+
+  @Keep
+  fun setOnscreenKeyboardVisible(visible: Boolean) {
+    Core.input.setOnscreenKeyboardVisible(visible)
+  }
+
+  @Keep
+  fun vibrate(milliseconds: Int) {
+    Core.input.vibrate(milliseconds)
+  }
+
+  @Keep
+  fun vibrate(pattern: LongArray, repeat: Int) {
+    Core.input.vibrate(pattern, repeat)
+  }
+
+  @Keep
+  fun cancelVibrate() {
+    Core.input.cancelVibrate()
   }
 
   fun execute() {

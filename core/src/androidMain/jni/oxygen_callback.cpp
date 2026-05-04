@@ -1,6 +1,9 @@
 #include "log.hpp"
+#include "object_manager.hpp"
 #include "oxygen.h"
+#include "oxygen_func.hpp"
 
+#include <android/input.h>
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
@@ -22,6 +25,35 @@ jstring createString(JNIEnv *env2, const std::string &str) {
 jstring conveyStr(JNIEnv *env1, JNIEnv *env2, jstring jstr) {
   return createString(env2, extractString(env1, jstr));
 }
+#define DEFINE_CONVEY_ARRAY(ElementType, jArrayType, GetElements,              \
+                            ReleaseElements, NewArray, SetRegion)              \
+  jArrayType convey##jArrayType(JNIEnv *envSrc, JNIEnv *envDst,                \
+                                jArrayType srcArray) {                         \
+    if (srcArray == NULL)                                                      \
+      return NULL;                                                             \
+    jsize length = envSrc->GetArrayLength(srcArray);                           \
+    ElementType *srcElements = envSrc->GetElements(srcArray, NULL);            \
+    if (srcElements == NULL)                                                   \
+      return NULL;                                                             \
+    jArrayType dstArray = envDst->NewArray(length);                            \
+    if (dstArray == NULL) {                                                    \
+      envSrc->ReleaseElements(srcArray, srcElements, JNI_ABORT);               \
+      return NULL;                                                             \
+    }                                                                          \
+    envDst->SetRegion(dstArray, 0, length, srcElements);                       \
+    envSrc->ReleaseElements(srcArray, srcElements, JNI_ABORT);                 \
+    return dstArray;                                                           \
+  }
+
+// 使用宏生成三个函数
+DEFINE_CONVEY_ARRAY(jint, jintArray, GetIntArrayElements,
+                    ReleaseIntArrayElements, NewIntArray, SetIntArrayRegion)
+DEFINE_CONVEY_ARRAY(jfloat, jfloatArray, GetFloatArrayElements,
+                    ReleaseFloatArrayElements, NewFloatArray,
+                    SetFloatArrayRegion)
+DEFINE_CONVEY_ARRAY(jlong, jlongArray, GetLongArrayElements,
+                    ReleaseLongArrayElements, NewLongArray, SetLongArrayRegion)
+
 JNIEnv *getEnv(JavaVM *vm) {
   JNIEnv *env = nullptr;
   jint attached = vm->GetEnv((void **)&env, JNI_VERSION_1_2);
@@ -92,7 +124,8 @@ JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onSurfaceCreated(
     return;
   auto sur = ANativeWindow_fromSurface(env, surface);
   getEnv(oxygen->jvm)
-      ->CallVoidMethod(oxygen->object_callback, oxygen->onSurfaceCreatedID, (jlong)(intptr_t)sur);
+      ->CallVoidMethod(oxygen->object_callback, oxygen->onSurfaceCreatedID,
+                       (jlong)(intptr_t)sur);
   ANativeWindow_release(sur);
 }
 
@@ -101,8 +134,8 @@ JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onSurfaceChanged(
   if (!oxygen->callback_init)
     return;
   getEnv(oxygen->jvm)
-      ->CallVoidMethod(oxygen->object_callback, oxygen->onSurfaceChangedID, width, height);
-
+      ->CallVoidMethod(oxygen->object_callback, oxygen->onSurfaceChangedID,
+                       width, height);
 }
 
 JNIEXPORT void JNICALL
@@ -111,7 +144,35 @@ Java_oxygen_bridge_OxygenBridge_onSurfaceDestroyed(JNIEnv *env, jobject thiz) {
     return;
   getEnv(oxygen->jvm)
       ->CallVoidMethod(oxygen->object_callback, oxygen->onSurfaceDestroyedID);
+}
 
+JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleTouch(
+    JNIEnv *env, jobject thiz, jintArray intData, jfloatArray floatData) {
+  if (!oxygen->callback_init)
+    return true;
+  auto envJ = getEnv(oxygen->jvm);
+  return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleTouchID,
+                                 conveyjintArray(env, envJ, intData),
+                                 conveyjfloatArray(env, envJ, floatData));
+}
+
+JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleGenericMotion(
+    JNIEnv *env, jobject thiz, jintArray intData, jfloatArray floatData) {
+  if (!oxygen->callback_init)
+    return true;
+  auto envJ = getEnv(oxygen->jvm);
+  return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleTouchID,
+                                 conveyjintArray(env, envJ, intData),
+                                 conveyjfloatArray(env, envJ, floatData));
+}
+
+JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleKey(
+    JNIEnv *env, jobject thiz, jint keyCode, jintArray intData) {
+  if (!oxygen->callback_init)
+    return true;
+  auto envJ = getEnv(oxygen->jvm);
+  return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleTouchID,
+                                 keyCode, conveyjintArray(env, envJ, intData));
 }
 
 //
@@ -132,9 +193,10 @@ JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_logLauncher(JNIEnv *env,
 
 JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_logOS(JNIEnv *env,
                                                             jclass clazz,
+                                                            jint prio,
                                                             jstring msg) {
   const char *msgStr = env->GetStringUTFChars(msg, nullptr);
-  __android_log_print(ANDROID_LOG_INFO, "Oxygen", "%s", msgStr);
+  __android_log_write(prio, "Oxygen", msgStr);
   env->ReleaseStringUTFChars(msg, msgStr);
 }
 
@@ -201,5 +263,74 @@ JNIEXPORT void JNICALL
 Java_oxygen_api_LauncherBridge_createsurface(JNIEnv *env, jclass clazz) {
   getEnv(oxygen->android_jvm)
       ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->createsurfaceID);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_oxygen_api_LauncherBridge_isFinishing(JNIEnv *env, jclass clazz) {
+  return getEnv(oxygen->android_jvm)
+      ->CallBooleanMethod(oxygen->object_OxygenBridge, oxygen->isFinishingID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_getTextInput(
+    JNIEnv *env, jclass clazz, jstring title, jstring message, jstring text,
+    jboolean numeric, jboolean multiline, jint maxLength, jboolean allowEmpty,
+    jobject onAccepted, jobject onCanceled) {
+  auto envA = getEnv(oxygen->android_jvm);
+
+  envA->CallVoidMethod(
+      oxygen->object_OxygenBridge, oxygen->getTextInputID,
+      conveyStr(env, envA, title), conveyStr(env, envA, message),
+      conveyStr(env, envA, text), numeric, multiline, maxLength, allowEmpty,
+      createCallback([func = JNIRefManager::instanceJVM().create(
+                          env, onAccepted)](const char *text) {
+        std::string str(text);
+        auto env = getEnv(oxygen->jvm);
+        env->CallVoidMethod(JNIRefManager::instanceJVM().get(func),
+                            oxygen->StrConsInvokeID, createString(env, str));
+        JNIRefManager::instanceJVM().release(env, func);
+      }),
+      createCallback(
+          [func = JNIRefManager::instanceJVM().create(env, onCanceled)]() {
+            auto env = getEnv(oxygen->jvm);
+            env->CallVoidMethod(JNIRefManager::instanceJVM().get(func),
+                                oxygen->VoidFuncInvokeID);
+            JNIRefManager::instanceJVM().release(env, func);
+          }));
+}
+
+JNIEXPORT jboolean JNICALL
+Java_oxygen_api_LauncherBridge_isShowingTextInput(JNIEnv *env, jclass clazz) {
+  return getEnv(oxygen->android_jvm)
+      ->CallBooleanMethod(oxygen->object_OxygenBridge,
+                          oxygen->isShowingTextInputID);
+}
+
+JNIEXPORT void JNICALL
+Java_oxygen_api_LauncherBridge_setOnscreenKeyboardVisible(JNIEnv *env,
+                                                          jclass clazz,
+                                                          jboolean visible) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge,
+                       oxygen->setOnscreenKeyboardVisibleID, visible);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_vibrate__I(
+    JNIEnv *env, jclass clazz, jint milliseconds) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->vibrate1ID,
+                       milliseconds);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_vibrate__JI(
+    JNIEnv *env, jclass clazz, jlongArray pattern, jint repeat) {
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->vibrate2ID,
+                       conveyjlongArray(env, envA, pattern), repeat);
+}
+
+JNIEXPORT void JNICALL
+Java_oxygen_api_LauncherBridge_cancelVibrate(JNIEnv *env, jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->cancelVibrateID);
 }
 }

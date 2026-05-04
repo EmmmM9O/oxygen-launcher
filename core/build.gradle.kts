@@ -1,4 +1,4 @@
-plugins { 
+plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.android.library)
 }
@@ -13,10 +13,16 @@ kotlin {
         implementation(libs.commons.compress)
         implementation(libs.xz)
         implementation(libs.bytehook)
-        implementation(libs.kotlinx.coroutines.core)
+        api(libs.kotlinx.coroutines.core)
       }
     }
-    val androidMain by getting {}
+    val androidMain by getting {
+      dependencies {
+        api(libs.androidx.lifecycle.runtime.ktx)
+        api(libs.androidx.appcompat)
+        api(libs.kotlinx.coroutines.android)
+      }
+    }
   }
 }
 

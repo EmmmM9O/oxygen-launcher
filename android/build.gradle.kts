@@ -3,12 +3,7 @@ plugins {
   alias(libs.plugins.kotlin.android)
 }
 
-dependencies {
-  implementation(project(":core"))
-  implementation(libs.androidx.lifecycle.runtime.ktx)
-  implementation(libs.androidx.appcompat)
-  implementation(libs.kotlinx.coroutines.android)
-}
+dependencies { implementation(project(":core")) }
 
 kotlin { jvmToolchain(17) }
 

@@ -1,4 +1,6 @@
+#include "callback_manager.hpp"
 #include "log.hpp"
+#include "object_manager.hpp"
 #include "oxygen.h"
 
 #include <cstdlib>
@@ -91,6 +93,22 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
                                          "(Ljava/lang/String;)Z");
     oxygen->createsurfaceID =
         env->GetMethodID(oxygen->class_OxygenBridge, "createsurface", "()V");
+
+    oxygen->isFinishingID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "isFinishing", "()Z");
+    oxygen->getTextInputID = env->GetMethodID(
+        oxygen->class_OxygenBridge, "getTextInput",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZIZJJ)V");
+    oxygen->isShowingTextInputID = env->GetMethodID(
+        oxygen->class_OxygenBridge, "isShowingTextInput", "()Z");
+    oxygen->setOnscreenKeyboardVisibleID = env->GetMethodID(
+        oxygen->class_OxygenBridge, "setOnscreenKeyboardVisible", "(Z)V");
+    oxygen->vibrate1ID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "vibrate", "(I)V");
+    oxygen->vibrate2ID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "vibrate", "([JI)V");
+    oxygen->cancelVibrateID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "cancelVibrate", "()V");
   } else if (oxygen->android_jvm != vm) {
     LOGI("Oxygen", "Saving JVM");
     oxygen->jvm = vm;
@@ -120,14 +138,37 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
                          "(Ljava/lang/String;)V");
     oxygen->onActivityResultID = env->GetMethodID(
         oxygen->class_callback, "onActivityResult", "(IILjava/lang/String;)V");
-    oxygen->onSurfaceCreatedID = env->GetMethodID(
-        oxygen->class_callback, "onSurfaceCreated", "(J)V");
+    oxygen->onSurfaceCreatedID =
+        env->GetMethodID(oxygen->class_callback, "onSurfaceCreated", "(J)V");
+    oxygen->onSurfaceChangedID =
+        env->GetMethodID(oxygen->class_callback, "onSurfaceChanged", "(II)V");
+    oxygen->onSurfaceDestroyedID =
+        env->GetMethodID(oxygen->class_callback, "onSurfaceDestroyed", "()V");
+    oxygen->handleTouchID =
+        env->GetMethodID(oxygen->class_callback, "handleTouch", "([I[F)Z");
 
-    oxygen->onSurfaceChangedID = env->GetMethodID(
-        oxygen->class_callback, "onSurfaceChanged", "(II)V");
+    // 获取 handleGenericMotion
+    oxygen->handleGenericMotionID = env->GetMethodID(
+        oxygen->class_callback, "handleGenericMotion", "([I[F)Z");
 
-    oxygen->onSurfaceDestroyedID = env->GetMethodID(
-        oxygen->class_callback, "onSurfaceDestroyed", "()V");
+    // 获取 handleKey
+    oxygen->handleKeyID =
+        env->GetMethodID(oxygen->class_callback, "handleKey", "(I[I)Z");
+
+    jclass clazz = env->FindClass("oxygen/api/VoidFunc");
+    if (clazz == nullptr) {
+      LOGE("Oxygen", "Failed to find class: oxygen/api/VoidFunc");
+      abort();
+    }
+    oxygen->VoidFuncInvokeID = env->GetMethodID(clazz, "invoke", "()V");
+
+    clazz = env->FindClass("oxygen/api/StrCons");
+    if (clazz == nullptr) {
+      LOGE("Oxygen", "Failed to find class: oxygen/api/StrCons");
+      abort();
+    }
+    oxygen->StrConsInvokeID =
+        env->GetMethodID(clazz, "invoke", "(Ljava/lang/String;)V");
   }
   return JNI_VERSION_1_4;
 }
@@ -147,6 +188,8 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
       env->DeleteGlobalRef(oxygen->object_OxygenBridge);
       oxygen->object_OxygenBridge = nullptr;
     }
+    callback::CallbackManager::instance().clear();
+    JNIRefManager::instanceAndroid().clear(env);
   } else if (vm == oxygen->jvm) {
     LOGI("Oxygen", "Release Oxygen JNI JVM");
     JNIEnv *env = nullptr;
@@ -163,6 +206,7 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
       oxygen->object_callback = nullptr;
       oxygen->callback_init = false;
     }
+    JNIRefManager::instanceJVM().clear(env);
   }
 }
 }

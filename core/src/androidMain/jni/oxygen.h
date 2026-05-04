@@ -21,6 +21,13 @@ struct Oxygen {
   jmethodID setClipboardTextID;
   jmethodID getClipboardTextID;
   jmethodID createsurfaceID;
+  jmethodID isFinishingID;
+  jmethodID getTextInputID;
+  jmethodID isShowingTextInputID;
+  jmethodID setOnscreenKeyboardVisibleID;
+  jmethodID vibrate1ID;
+  jmethodID vibrate2ID;
+  jmethodID cancelVibrateID;
 
   jmethodID onWindowFocusChangedID;
   jmethodID onPauseID;
@@ -31,6 +38,12 @@ struct Oxygen {
   jmethodID onSurfaceCreatedID;
   jmethodID onSurfaceChangedID;
   jmethodID onSurfaceDestroyedID;
+  jmethodID handleTouchID;
+  jmethodID handleGenericMotionID;
+  jmethodID handleKeyID;
+
+  jmethodID VoidFuncInvokeID;
+  jmethodID StrConsInvokeID;
 };
 
 extern struct Oxygen *oxygen;

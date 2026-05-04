@@ -22,4 +22,6 @@ interface Platform {
   fun openAssets(path: String): InputStream
 
   fun createSurface(): Unit
+
+  fun finishing(): Boolean
 }
