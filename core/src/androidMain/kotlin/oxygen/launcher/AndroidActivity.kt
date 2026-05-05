@@ -93,6 +93,7 @@ open class AndroidActivity : AppCompatActivity(), Platform {
       Core.bridge.execute()
       Core.launcher = JvmLauncher()
       Core.launcher.launch()
+      finishAffinity()
     }
     while (!surfaceCreated) {}
     Log.info("[OxygenL] Create Surface")

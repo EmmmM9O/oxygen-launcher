@@ -59,10 +59,6 @@ abstract class Launcher {
     args.purgeArg("-XX:+UseLargePagesInMetaspace")
     args.purgeArg("-XX:+UseLargePages")
     args.add("--enable-native-access=ALL-UNNAMED")
-    /*
-    args.add("-Xms${ramAllocationString}M")
-    args.add("-Xmx${ramAllocationString}M")
-    */
   }
 
   protected fun MutableList<String>.purgeArg(argStart: String) {
@@ -76,6 +72,7 @@ abstract class Launcher {
     val overridableArguments =
         mutableMapOf<String, String>()
             .apply {
+              put("oxygen.home", OLPath.filesDir.absolutePath())
               put("java.home", getJavaHome())
               put("java.io.tmpdir", OLPath.cacheDir.absolutePath())
               put("user.language", System.getProperty("user.language"))
@@ -84,6 +81,12 @@ abstract class Launcher {
               put("os.name", "Linux")
               put("os.version", "Android-${Core.platform.getVersion()}")
               put("oxygenlauncher.nativedir", OLPath.nativeLibDir.absolutePath())
+              fun prop(name: String): String? = System.getProperty(name)
+              listOf("os.arch").forEach{name->
+                prop(name)?.let{
+                  put(name, it)
+                }
+              }
             }
             .map { entry -> "-D${entry.key}=${entry.value}" }
     val additionalArguments =

@@ -50,8 +50,8 @@ class AndroidInput(val context: Context, val view: View) :
 
   override fun onGenericMotion(view: View, event: MotionEvent): Boolean {
     return Core.bridge.handleTouch(
-        MotionEventPacker.packIntData(event),
-        MotionEventPacker.packFloatData(event),
+        GenericMotionPacker.packIntData(event),
+        GenericMotionPacker.packFloatData(event),
     )
   }
 

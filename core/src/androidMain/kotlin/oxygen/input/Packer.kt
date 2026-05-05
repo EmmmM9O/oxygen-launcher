@@ -93,3 +93,71 @@ object KeyEventPacker {
     return data
   }
 }
+
+object GenericMotionPacker {
+  private const val HEADER_SIZE = 12
+
+  private val AXES =
+      intArrayOf(
+          MotionEvent.AXIS_X,
+          MotionEvent.AXIS_Y,
+          MotionEvent.AXIS_HSCROLL,
+          MotionEvent.AXIS_VSCROLL,
+          MotionEvent.AXIS_SCROLL,
+          MotionEvent.AXIS_RELATIVE_X,
+          MotionEvent.AXIS_RELATIVE_Y,
+          MotionEvent.AXIS_RX,
+          MotionEvent.AXIS_RY,
+          MotionEvent.AXIS_RZ,
+          MotionEvent.AXIS_Z,
+          MotionEvent.AXIS_HAT_X,
+          MotionEvent.AXIS_HAT_Y,
+          MotionEvent.AXIS_LTRIGGER,
+          MotionEvent.AXIS_RTRIGGER,
+          MotionEvent.AXIS_THROTTLE,
+          MotionEvent.AXIS_RUDDER,
+          MotionEvent.AXIS_WHEEL,
+          MotionEvent.AXIS_GAS,
+          MotionEvent.AXIS_BRAKE,
+          MotionEvent.AXIS_DISTANCE,
+          MotionEvent.AXIS_TILT,
+          MotionEvent.AXIS_ORIENTATION,
+          MotionEvent.AXIS_PRESSURE,
+          MotionEvent.AXIS_SIZE,
+          MotionEvent.AXIS_TOUCH_MAJOR,
+          MotionEvent.AXIS_TOUCH_MINOR,
+          MotionEvent.AXIS_TOOL_MAJOR,
+          MotionEvent.AXIS_TOOL_MINOR,
+      )
+
+  fun packIntData(event: MotionEvent): IntArray {
+    val intData = IntArray(HEADER_SIZE)
+    var pos = 0
+
+    intData[pos++] = event.actionMasked
+    intData[pos++] = event.actionIndex
+    intData[pos++] = 0 // pointerCount
+    intData[pos++] = 0 // historySize
+    intData[pos++] = event.source
+    intData[pos++] = event.flags
+    intData[pos++] = event.edgeFlags
+    intData[pos++] = event.metaState
+    intData[pos++] = event.buttonState
+    intData[pos++] = event.deviceId
+    intData[pos++] = event.downTime.toInt()
+    intData[pos++] = event.eventTime.toInt()
+
+    return intData
+  }
+
+  fun packFloatData(event: MotionEvent): FloatArray {
+    val floatData = FloatArray(2 + AXES.size)
+    floatData[0] = event.x
+    floatData[1] = event.y
+    for (i in AXES.indices) {
+      floatData[4 + i] = event.getAxisValue(AXES[i])
+    }
+
+    return floatData
+  }
+}
