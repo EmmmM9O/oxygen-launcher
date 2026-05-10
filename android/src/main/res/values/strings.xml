@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Oxygen Launcher</string>
+  <string name="app_name">Oxygen Launcher</string>
+  <string name="jar_unfound">Jar UnFound</string>
+  <string name="jar_unfound_message">Jar file %s not exisis</string>
+  <string name="button_open">Open</string>
+  <string name="button_confirm">OK</string>
 </resources>

@@ -13,5 +13,6 @@ object Core {
   lateinit var launcher: Launcher
   lateinit var platform: Platform
   lateinit var input: Input
+  lateinit var settings: Settings
   var jvmInit = false
 }

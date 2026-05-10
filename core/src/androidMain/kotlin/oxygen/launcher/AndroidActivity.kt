@@ -31,8 +31,6 @@ import oxygen.util.*
 
 open class AndroidActivity : AppCompatActivity(), Platform {
   lateinit var clipboard: ClipboardManager
-  var hideStatusBar = false
-  var useImmersiveMode = false
   val dispather = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
   lateinit var handler: Handler
   lateinit var view: RenderSurfaceView
@@ -41,6 +39,7 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   private val eventListeners = mutableMapOf<Int, AndroidEventListener>()
   private val cacheFiles = mutableMapOf<String, Uri>()
   private var lastEventNumber = 43
+  var loopJob: Job? = null
 
   fun init() {
     val errHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -64,9 +63,12 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     Core.files = AndroidFiles(assets, getExternalFilesDir(null)!!.getAbsolutePath())
     OLPath.init()
     loadFileLogger(OLPath.logFile)
-    hideStatusBar(this.hideStatusBar)
-    useImmersiveMode(this.useImmersiveMode)
-    if (this.useImmersiveMode && getVersion() >= Build.VERSION_CODES.KITKAT) {
+    Core.settings = Settings()
+    val lc = Core.settings.launcher
+    createWakeLock(lc.useWakelock)
+    hideStatusBar(lc.hideStatusBar)
+    useImmersiveMode(lc.useImmersiveMode)
+    if (lc.useImmersiveMode && getVersion() >= Build.VERSION_CODES.KITKAT) {
       try {
         val rootView = this.window.decorView
         rootView.setOnSystemUiVisibilityChangeListener {
@@ -76,28 +78,9 @@ open class AndroidActivity : AppCompatActivity(), Platform {
         Log.err("[OxygenL] Failed to create AndroidVisibilityListener \n ${e.trace()}")
       }
     }
-    Log.info("[OxygenL][ANDROID] Android:  ${Build.VERSION.RELEASE}")
-    Log.info("[OxygenL][ANDROID] API level: ${Build.VERSION.SDK_INT}")
-    Log.info("[OxygenL][ANDROID] Device:  ${OS.deviceName()}")
-    Log.info("[OxygenL][ANDROID] CPU:  ${OS.socName()}")
-    Build.SUPPORTED_ABIS.forEachIndexed { index, abi ->
-      Log.info("[OxygenL][ABI${index + 1}] : $abi")
-    }
-    Log.info(
-        "[OxygenL][OS] : ${System.getProperty("os.name")} v${System.getProperty("os.version")}"
-    )
-    Log.info(
-        "[OxygenL][JVM] : ${System.getProperty("java.vm.name")} v${System.getProperty("java.vm.version")} by${System.getProperty("java.vm.vendor")}"
-    )
-    val runtime = Runtime.getRuntime()
-    Log.info(
-        "[OxygenL][RAM] : ${formatMemory(runtime.totalMemory() - runtime.freeMemory())} / ${formatMemory(runtime.totalMemory())} / ${formatMemory(runtime.maxMemory())}"
-    )
-    Log.info("[OxygenL][CPU] Cores : ${runtime.availableProcessors()}")
-    JreManager.init()
-    JreManager.install()
-    Log.info("[OxygenL][IN JRE]:RELEASE\n${JreManager.getRelease(OLPath.javaPath)}")
+  }
 
+  fun runJVM() {
     lifecycleScope.launch(dispather) {
       Core.bridge = OxygenBridge()
       Core.bridge.execute()
@@ -216,8 +199,13 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   override fun onWindowFocusChanged(hasFocus: Boolean) {
     super.onWindowFocusChanged(hasFocus)
     if (Core.jvmInit) Core.bridge.onWindowFocusChanged(hasFocus)
-    useImmersiveMode(this.useImmersiveMode)
-    hideStatusBar(this.hideStatusBar)
+    useImmersiveMode(Core.settings.launcher.useImmersiveMode)
+    hideStatusBar(Core.settings.launcher.hideStatusBar)
+  }
+
+  protected fun createWakeLock(use: Boolean) {
+    if (!use) return
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
   }
 
   @TargetApi(19)
@@ -251,6 +239,7 @@ open class AndroidActivity : AppCompatActivity(), Platform {
 
   override fun onDestroy() {
     Log.info("[Oxygen Launcher] Destory")
+    loopJob?.cancel()
     if (Core.jvmInit) Core.bridge.onDestroy()
     dispather.close()
     super.onDestroy()
@@ -285,6 +274,19 @@ open class AndroidActivity : AppCompatActivity(), Platform {
 
   override fun endForceLandscape(): Unit {
     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER)
+  }
+
+  override fun startLoop(): Unit {
+    loopJob?.cancel()
+    loopJob =
+        lifecycleScope.launch(Dispatchers.Main) {
+          Core.bridge.loop()
+          kotlinx.coroutines.yield()
+        }
+  }
+
+  override fun endLoop(): Unit {
+    loopJob?.cancel()
   }
 
   override fun onRequestPermissionsResult(

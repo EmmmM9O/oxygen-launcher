@@ -23,6 +23,8 @@ class OxygenBridge {
   external fun getenv(key: String): String
 
   // Callback
+  external fun loop(): Unit
+
   external fun onWindowFocusChanged(hasFocus: Boolean): Unit
 
   external fun onPause(): Unit
@@ -57,7 +59,7 @@ class OxygenBridge {
       floatData: FloatArray,
   ): Boolean
 
-  external fun handleKey(keyCode: Int, /*KeyEvent*/ intData: IntArray): Boolean
+  external fun handleKey(keyCode: Int, /*KeyEvent*/ intData: IntArray, characters:String): Boolean
 
   @Keep
   fun log(log: String) {
@@ -146,6 +148,35 @@ class OxygenBridge {
     Core.platform.postCacheFile(uri)
   }
 
+  @Keep
+  fun setAllSettings(json: String): Unit {
+    Core.settings.loadFrom(json)
+  }
+
+  @Keep fun getAllSettings(): String = Core.settings.toJsonString()
+
+  @Keep
+  fun setGameSettings(json: String): Unit {
+    Core.settings.apply { game = asObj(json) }
+  }
+
+  @Keep fun getGameSettings(): String = Core.settings.let { it.toJsonString(it.game) }
+
+  @Keep
+  fun setGameDefault(json: String) {
+    Core.settings.setGameDefault(json)
+  }
+
+  @Keep
+  fun startLoop() {
+    Core.platform.startLoop()
+  }
+
+  @Keep
+  fun endLoop() {
+    Core.platform.endLoop()
+  }
+
   // Input
   @Keep
   fun getTextInput(
@@ -205,7 +236,7 @@ class OxygenBridge {
 
   fun execute() {
     setBridge(this)
-    val errorCode = redirectStdio(OLPath.logFile.absolutePath())
+    if (Core.settings.launcher.redirectStdio) redirectStdio(OLPath.logFile.absolutePath())
   }
 
   companion object {

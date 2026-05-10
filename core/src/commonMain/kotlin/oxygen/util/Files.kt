@@ -89,7 +89,7 @@ open class Fi {
           } catch (ex: Exception) {
             if (file().isDirectory())
                 throw RuntimeException("Cannot open a stream to a directory: $file ($type)", ex)
-            throw RuntimeException("Error writing file: $file ($type)", ex)
+            throw RuntimeException("Error reading file: $file ($type)", ex)
           }
 
   fun reader(charset: String): Reader {

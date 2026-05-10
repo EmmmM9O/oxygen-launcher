@@ -45,4 +45,8 @@ interface Platform {
   fun getExternalPermission(code: Int): Unit
 
   fun hide(): Unit
+
+  fun startLoop(): Unit
+
+  fun endLoop(): Unit
 }

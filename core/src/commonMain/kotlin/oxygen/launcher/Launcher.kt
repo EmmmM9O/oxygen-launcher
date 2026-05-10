@@ -39,7 +39,7 @@ abstract class Launcher {
       FLog.log("JVMArgs: $arg")
     }
 
-    Core.bridge.setupExitTrap(Core.bridge)
+    if (Core.settings.launcher.setupExitTrap) Core.bridge.setupExitTrap(Core.bridge)
     Core.bridge.chdir(chdir())
 
     Core.jvmInit = true
@@ -50,8 +50,8 @@ abstract class Launcher {
   }
 
   protected open fun progressFinalUserArgs(args: MutableList<String>) {
-    args.purgeArg("-Xms")
-    args.purgeArg("-Xmx")
+    //    args.purgeArg("-Xms")
+    //    args.purgeArg("-Xmx")
     args.purgeArg("-d32")
     args.purgeArg("-d64")
     args.purgeArg("-Xint")

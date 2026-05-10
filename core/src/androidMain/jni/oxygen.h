@@ -37,7 +37,15 @@ struct Oxygen {
   jmethodID beginForceLandscapeID;
   jmethodID endForceLandscapeID;
   jmethodID postCacheFileID;
+  jmethodID setAllSettingsID;
+  jmethodID getAllSettingsID;
+  jmethodID setGameSettingsID;
+  jmethodID getGameSettingsID;
+  jmethodID setGameDefaultID;
+  jmethodID startLoopID;
+  jmethodID endLoopID;
 
+  jmethodID loopID;
   jmethodID onWindowFocusChangedID;
   jmethodID onPauseID;
   jmethodID onResumeID;

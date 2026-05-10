@@ -45,7 +45,7 @@ class AndroidInput(val context: Context, val view: View) :
   }
 
   override fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {
-    return Core.bridge.handleKey(keyCode, KeyEventPacker.packIntData(event))
+    return Core.bridge.handleKey(keyCode, KeyEventPacker.packIntData(event), event.getCharacters() ?: "")
   }
 
   override fun onGenericMotion(view: View, event: MotionEvent): Boolean {

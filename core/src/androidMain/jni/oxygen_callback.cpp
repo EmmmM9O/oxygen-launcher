@@ -106,6 +106,12 @@ JNIEnv *getEnv(JavaVM *vm) {
   return env;
 }
 extern "C" {
+JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_loop(JNIEnv *env,
+                                                            jobject thiz) {
+  if (!oxygen->callback_init)
+    return;
+  getEnv(oxygen->jvm)->CallVoidMethod(oxygen->object_callback, oxygen->loopID);
+}
 JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onWindowFocusChanged(
     JNIEnv *env, jobject thiz, jboolean value) {
   if (!oxygen->callback_init)
@@ -215,12 +221,13 @@ JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleGenericMotion(
 }
 
 JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleKey(
-    JNIEnv *env, jobject thiz, jint keyCode, jintArray intData) {
+    JNIEnv *env, jobject thiz, jint keyCode, jintArray intData, jstring str) {
   if (!oxygen->callback_init)
     return true;
   auto envJ = getEnv(oxygen->jvm);
   return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleKeyID,
-                                 keyCode, conveyjintArray(env, envJ, intData));
+                                 keyCode, conveyjintArray(env, envJ, intData),
+                                 conveyStr(env, envJ, str));
 }
 
 //
@@ -374,6 +381,55 @@ Java_oxygen_api_LauncherBridge_endForceLandscape(JNIEnv *env, jclass clazz) {
   getEnv(oxygen->android_jvm)
       ->CallVoidMethod(oxygen->object_OxygenBridge,
                        oxygen->endForceLandscapeID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_setAllSettings(
+    JNIEnv *env, jclass clazz, jstring text) {
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->setAllSettingsID,
+                       conveyStr(env, envA, text));
+}
+
+JNIEXPORT jstring JNICALL
+Java_oxygen_api_LauncherBridge_getAllSettings(JNIEnv *env, jclass clazz) {
+  auto envA = getEnv(oxygen->android_jvm);
+  return conveyStr(envA, env,
+                   (jstring)envA->CallObjectMethod(oxygen->object_OxygenBridge,
+                                                   oxygen->getAllSettingsID));
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_setGameSettings(
+    JNIEnv *env, jclass clazz, jstring text) {
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->setGameSettingsID,
+                       conveyStr(env, envA, text));
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_setGameDefault(
+    JNIEnv *env, jclass clazz, jstring text) {
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->setGameDefaultID,
+                       conveyStr(env, envA, text));
+}
+
+JNIEXPORT jstring JNICALL
+Java_oxygen_api_LauncherBridge_getGameSettings(JNIEnv *env, jclass clazz) {
+  auto envA = getEnv(oxygen->android_jvm);
+  return conveyStr(envA, env,
+                   (jstring)envA->CallObjectMethod(oxygen->object_OxygenBridge,
+                                                   oxygen->getGameSettingsID));
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_startLoop(JNIEnv *env,
+                                                                jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->startLoopID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_endLoop(JNIEnv *env,
+                                                              jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->endLoopID);
 }
 
 JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_postCacheFile(
