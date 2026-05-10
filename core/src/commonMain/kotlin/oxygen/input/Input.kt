@@ -24,4 +24,5 @@ data class TextInputConfig(
     val allowEmpty: Boolean = true,
     val onAccepted: (String) -> Unit = {},
     val onCanceled: () -> Unit = {},
+    val onDismiss: () -> Unit = {},
 )

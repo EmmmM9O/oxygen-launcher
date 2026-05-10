@@ -124,7 +124,10 @@ class AndroidInput(val context: Context, val view: View) :
         handle.post { config.onCanceled() }
       }
       alert.setOnCancelListener { handle.post { config.onCanceled() } }
-      alert.setOnDismissListener { showingTextInput = false }
+      alert.setOnDismissListener {
+        showingTextInput = false
+        config.onDismiss()
+      }
 
       showingTextInput = true
 

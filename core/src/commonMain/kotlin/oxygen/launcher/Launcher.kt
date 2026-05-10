@@ -82,11 +82,7 @@ abstract class Launcher {
               put("os.version", "Android-${Core.platform.getVersion()}")
               put("oxygenlauncher.nativedir", OLPath.nativeLibDir.absolutePath())
               fun prop(name: String): String? = System.getProperty(name)
-              listOf("os.arch").forEach{name->
-                prop(name)?.let{
-                  put(name, it)
-                }
-              }
+              listOf("os.arch").forEach { name -> prop(name)?.let { put(name, it) } }
             }
             .map { entry -> "-D${entry.key}=${entry.value}" }
     val additionalArguments =

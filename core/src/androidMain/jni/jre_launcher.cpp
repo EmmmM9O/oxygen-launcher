@@ -162,7 +162,7 @@ static jint launchJVM(int margc, char **margv) {
 
   LOGI("Oxygen", "Calling JLI_Launch");
 
-  return pJLI_Launch(
+  auto res = pJLI_Launch(
       margc, margv, 0,
       NULL, // sizeof(const_jargs) / sizeof(char *), const_jargs,
       0,
@@ -172,6 +172,8 @@ static jint launchJVM(int margc, char **margv) {
       *margv, // (const_launcher != NULL) ? const_launcher : *margv,
       (const_jargs != NULL) ? JNI_TRUE : JNI_FALSE, const_cpwildcard,
       const_javaw, const_ergo_class);
+  oxygen->callback_init = false;
+  return res;
 }
 
 extern "C" {

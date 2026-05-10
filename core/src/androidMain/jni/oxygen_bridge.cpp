@@ -96,9 +96,45 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     oxygen->isFinishingID =
         env->GetMethodID(oxygen->class_OxygenBridge, "isFinishing", "()Z");
+
+    oxygen->showFileChooserID = env->GetMethodID(
+          oxygen->class_OxygenBridge,
+          "showFileChooser",
+          "(ZLjava/lang/String;JJJ[Ljava/lang/String;)V"
+    );
+
+    oxygen->haveExternalPermissionID = env->GetMethodID(
+          oxygen->class_OxygenBridge,
+          "haveExternalPermission",
+          "()Z"
+    );
+
+    oxygen->getExternalPermissionID = env->GetMethodID(
+          oxygen->class_OxygenBridge,
+          "getExternalPermission",
+          "(I)V"
+    );
+    oxygen->getVersionID= env->GetMethodID(
+          oxygen->class_OxygenBridge,
+          "getVersion",
+          "()I"
+    );
+    oxygen->getNativeHeapID= env->GetMethodID(
+          oxygen->class_OxygenBridge,
+          "getNativeHeap",
+          "()J"
+    );
+    oxygen->hideID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "hide", "()V");
+    oxygen->beginForceLandscapeID=
+        env->GetMethodID(oxygen->class_OxygenBridge, "beginForceLandscape", "()V");
+    oxygen->endForceLandscapeID=
+        env->GetMethodID(oxygen->class_OxygenBridge, "endForceLandscape", "()V");
+    oxygen->postCacheFileID=
+        env->GetMethodID(oxygen->class_OxygenBridge, "postCacheFile", "(Ljava/lang/String;)V");
     oxygen->getTextInputID = env->GetMethodID(
         oxygen->class_OxygenBridge, "getTextInput",
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZIZJJ)V");
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZIZJJJ)V");
     oxygen->isShowingTextInputID = env->GetMethodID(
         oxygen->class_OxygenBridge, "isShowingTextInput", "()Z");
     oxygen->setOnscreenKeyboardVisibleID = env->GetMethodID(
@@ -133,6 +169,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         env->GetMethodID(oxygen->class_callback, "onResume", "()V");
     oxygen->onDestroyID =
         env->GetMethodID(oxygen->class_callback, "onDestroy", "()V");
+    oxygen->onExitID =
+        env->GetMethodID(oxygen->class_callback, "onExit", "()V");
     oxygen->onConfigurationChangedID =
         env->GetMethodID(oxygen->class_callback, "onConfigurationChanged",
                          "(Ljava/lang/String;)V");

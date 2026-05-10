@@ -43,6 +43,12 @@ class OxygenBridge {
 
   external fun onSurfaceDestroyed(): Unit
 
+  external fun onRequestPermissionsResult(
+      requestCode: Int,
+      permissions: Array<String>,
+      grantResults: IntArray,
+  )
+
   // Input callback
   external fun handleTouch(/*MotionEvent*/ intData: IntArray, floatData: FloatArray): Boolean
 
@@ -89,6 +95,57 @@ class OxygenBridge {
 
   @Keep fun isFinishing(): Boolean = Core.platform.finishing()
 
+  @Keep
+  fun showFileChooser(
+      open: Boolean,
+      title: String,
+      cons: Long,
+      error: Long,
+      release: Long,
+      extensions: Array<String>,
+  ) {
+    Core.platform.showFileChooser(
+        open,
+        title,
+        { str -> FuncUtils.callStrCons(str, cons) },
+        { str1, str2 -> FuncUtils.callStrCons2(str1, str2, error) },
+        {
+          FuncUtils.callVoid(release)
+          FuncUtils.release(cons)
+          FuncUtils.release(error)
+          FuncUtils.release(release)
+        },
+        *extensions,
+    )
+  }
+
+  @Keep fun haveExternalPermission(): Boolean = Core.platform.haveExternalPermission()
+
+  @Keep
+  fun getExternalPermission(code: Int): Unit {
+    Core.platform.getExternalPermission(code)
+  }
+
+  @Keep
+  fun hide(): Unit {
+    Core.platform.hide()
+  }
+
+  @Keep
+  fun beginForceLandscape(): Unit {
+    Core.platform.beginForceLandscape()
+  }
+
+  @Keep
+  fun endForceLandscape(): Unit {
+    Core.platform.endForceLandscape()
+  }
+
+  @Keep
+  fun postCacheFile(uri: String): Unit {
+    Core.platform.postCacheFile(uri)
+  }
+
   // Input
   @Keep
   fun getTextInput(
@@ -101,6 +158,7 @@ class OxygenBridge {
       allowEmpty: Boolean,
       onAccepted: Long,
       onCanceled: Long,
+      release: Long,
   ): Unit {
     Core.input.getTextInput(
         TextInputConfig(
@@ -111,15 +169,17 @@ class OxygenBridge {
             multiline,
             maxLength,
             allowEmpty,
-            { str -> CallStrCons(str, onAccepted) },
-            { CallVoid(onCanceled) },
+            { str -> FuncUtils.callStrCons(str, onAccepted) },
+            { FuncUtils.callVoid(onCanceled) },
+            {
+              FuncUtils.callVoid(release)
+              FuncUtils.release(onAccepted)
+              FuncUtils.release(onCanceled)
+              FuncUtils.release(release)
+            },
         )
     )
   }
-
-  external fun CallVoid(ptr: Long): Unit
-
-  external fun CallStrCons(text: String, ptr: Long): Unit
 
   @Keep fun isShowingTextInput(): Boolean = Core.input.isShowingTextInput()
 
@@ -153,4 +213,14 @@ class OxygenBridge {
       System.loadLibrary("oxygen")
     }
   }
+}
+
+object FuncUtils {
+  external fun callVoid(ptr: Long): Unit
+
+  external fun callStrCons(text: String, ptr: Long): Unit
+
+  external fun callStrCons2(str1: String, str2: String, ptr: Long): Unit
+
+  external fun release(ptr: Long)
 }

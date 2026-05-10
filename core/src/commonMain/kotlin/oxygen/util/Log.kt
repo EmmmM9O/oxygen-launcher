@@ -41,6 +41,43 @@ object Log {
 
 fun Throwable.trace(): String = oxygen.util.Log.getStackTrace(this)
 
+fun Throwable.finalMessage(): String? {
+  return generateSequence(this) { it.cause }.mapNotNull { it.message }.lastOrNull()
+}
+
+fun Throwable.neatError(stacktrace: Boolean = true): String {
+  val build = StringBuilder()
+  var current: Throwable? = this
+
+  while (current != null) {
+    var name = current.javaClass.toString().substring("class ".length).replace("Exception", "")
+    val dotIndex = name.lastIndexOf('.')
+    if (dotIndex != -1) {
+      name = name.substring(dotIndex + 1)
+    }
+
+    build.append("> ").append(name)
+    if (current.message != null) {
+      build.append(": '").append(current.message).append("'")
+    }
+
+    if (stacktrace) {
+      for (s in current.stackTrace) {
+        val className = s.className
+        val shortName = className.substring(className.lastIndexOf('.') + 1)
+        if (className.contains("MethodAccessor") || shortName == "Method") continue
+        build.append("\n")
+        build.append(shortName).append(".").append(s.methodName).append(": ").append(s.lineNumber)
+      }
+    }
+
+    build.append("\n")
+    current = current.cause
+  }
+
+  return build.toString()
+}
+
 enum class LogLevel {
   debug,
   info,

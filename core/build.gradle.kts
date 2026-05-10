@@ -18,6 +18,7 @@ kotlin {
     }
     val androidMain by getting {
       dependencies {
+	api(libs.androidx.core.ktx)
         api(libs.androidx.lifecycle.runtime.ktx)
         api(libs.androidx.appcompat)
         api(libs.kotlinx.coroutines.android)

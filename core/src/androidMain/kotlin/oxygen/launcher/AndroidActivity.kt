@@ -1,15 +1,22 @@
 package oxygen.launcher
 
+import android.*
 import android.annotation.TargetApi
 import android.app.*
 import android.content.*
+import android.content.pm.*
 import android.content.res.*
 import android.net.*
 import android.os.*
+import android.os.Build.*
+import android.provider.OpenableColumns
 import android.system.Os
+import android.telephony.*
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.*
+import androidx.core.content.*
 import androidx.lifecycle.lifecycleScope
 import java.io.*
 import java.lang.Thread.*
@@ -31,6 +38,9 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   lateinit var view: RenderSurfaceView
   lateinit var input: AndroidInput
   @Volatile var surfaceCreated = false
+  private val eventListeners = mutableMapOf<Int, AndroidEventListener>()
+  private val cacheFiles = mutableMapOf<String, Uri>()
+  private var lastEventNumber = 43
 
   fun init() {
     val errHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -170,7 +180,7 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   }
 
   override fun openFolder(file: String): Boolean {
-    Log.info(file)
+    Log.info("Open folder $file")
     val selectedUri = Uri.parse(file)
     val intent = Intent(Intent.ACTION_VIEW).apply { setDataAndType(selectedUri, "resource/folder") }
 
@@ -253,12 +263,6 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     if (Core.jvmInit) Core.bridge.onConfigurationChanged("")
   }
 
-  override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-    super.onActivityResult(requestCode, resultCode, data)
-    // TODO
-    if (Core.jvmInit) Core.bridge.onActivityResult(requestCode, resultCode, "")
-  }
-
   override fun symlink(target: String, link: String) {
     Os.symlink(target, link)
   }
@@ -270,4 +274,161 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   }
 
   override fun finishing(): Boolean = isFinishing()
+
+  override fun hide(): Unit {
+    moveTaskToBack(true)
+  }
+
+  override fun beginForceLandscape(): Unit {
+    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
+  }
+
+  override fun endForceLandscape(): Unit {
+    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER)
+  }
+
+  override fun onRequestPermissionsResult(
+      requestCode: Int,
+      permissions: Array<String>,
+      grantResults: IntArray,
+  ) {
+    if (Core.jvmInit) Core.bridge.onRequestPermissionsResult(requestCode, permissions, grantResults)
+  }
+
+  fun getUniqueFileName(uri: Uri): String {
+    val originalName = getFileName(uri) ?: "unknown"
+    val extension = originalName.substringAfterLast('.', "")
+    val baseName = originalName.substringBeforeLast('.')
+    val timestamp = System.currentTimeMillis()
+
+    return if (extension.isNotEmpty()) {
+      "${baseName}_${timestamp}.${extension}"
+    } else {
+      "${baseName}_${timestamp}"
+    }
+  }
+
+  private fun getFileName(uri: Uri): String? {
+    var name: String? = null
+    contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+      val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+      if (cursor.moveToFirst() && nameIndex >= 0) {
+        name = cursor.getString(nameIndex)
+      }
+    }
+    return name
+  }
+
+  override fun haveExternalPermission(): Boolean =
+      ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+          PackageManager.PERMISSION_GRANTED &&
+          ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) ==
+              PackageManager.PERMISSION_GRANTED
+
+  override fun getExternalPermission(code: Int): Unit {
+    val perms = mutableListOf<String>()
+    if (
+        ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+    ) {
+      perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+    if (
+        ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+    ) {
+      perms.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+    ActivityCompat.requestPermissions(this, perms.toTypedArray(), code)
+  }
+
+  override fun showFileChooser(
+      open: Boolean,
+      title: String,
+      cons: (String) -> Unit,
+      error: (String, String) -> Unit,
+      finish: () -> Unit,
+      vararg extensions: String,
+  ) {
+    try {
+      val extension = extensions[0]
+
+      val intent = Intent(if (open) Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_CREATE_DOCUMENT)
+      intent.addCategory(Intent.CATEGORY_OPENABLE)
+      intent.setType(
+          if (extension == "zip" && !open && extensions.size == 1) "application/zip" else "*/*"
+      )
+      intent.putExtra(Intent.EXTRA_TITLE, "export.$extension")
+
+      addResultListener(
+          { startActivityForResult(intent, it) },
+          { code, resultIntent ->
+            if (code == Activity.RESULT_OK && resultIntent != null && resultIntent.data != null) {
+              val uri = resultIntent.data!!
+
+              if (uri.path?.contains("(invalid)") == true) return@addResultListener
+
+              handler.post {
+                OLPath.oxygenCacheDir.mkdirs()
+                val file = OLPath.oxygenCacheDir.child(getUniqueFileName(uri))
+                Log.info("Open file ${uri.path} cache to ${file.absolutePath()}")
+                cacheFiles[file.absolutePath()] = uri
+                if (open) {
+                  contentResolver.openInputStream(uri)!!.use { input ->
+                    file.write().use { output -> input.copyTo(output) }
+                  }
+                }
+                cons(file.absolutePath())
+                finish()
+                if (file.exists()) {
+                  if (!open)
+                      contentResolver.openOutputStream(uri)!!.use { output ->
+                        file.file().inputStream().use { input -> input.copyTo(output) }
+                      }
+                  file.delete()
+                }
+              }
+            } else {
+              handler.post(finish)
+            }
+          },
+      )
+    } catch (err: Throwable) {
+      error(err.finalMessage()!!, err.neatError()!!)
+    }
+  }
+
+  override fun postCacheFile(uri: String): Unit {
+    val target = cacheFiles[uri]
+    if (target == null) {
+      Log.warn("try to post $uri but not found target")
+      return
+    }
+    val file = Fi(uri)
+    if (!file.exists()) {
+      Log.warn("try to post $uri but not found the file")
+      return
+    }
+    contentResolver.openOutputStream(target)!!.use { output ->
+      file.file().inputStream().use { input -> input.copyTo(output) }
+    }
+  }
+
+  override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    super.onActivityResult(requestCode, resultCode, data)
+    synchronized(eventListeners) { eventListeners[requestCode]?.invoke(resultCode, data) }
+    if (Core.jvmInit) Core.bridge.onActivityResult(requestCode, resultCode, "")
+  }
+
+  fun addResultListener(runner: (Int) -> Unit, listener: AndroidEventListener) {
+    synchronized(eventListeners) {
+      val id = lastEventNumber++
+      eventListeners[id] = listener
+      runner(id)
+    }
+  }
+
+  fun interface AndroidEventListener : (Int, Intent?) -> Unit {
+    override fun invoke(resultCode: Int, data: Intent?): Unit
+  }
 }

@@ -14,6 +14,9 @@
 #include <string>
 
 std::string extractString(JNIEnv *env1, jstring jstr) {
+  if (jstr == nullptr) {
+    return std::string();
+  }
   const char *chars = env1->GetStringUTFChars(jstr, nullptr);
   std::string result(chars);
   env1->ReleaseStringUTFChars(jstr, chars);
@@ -45,7 +48,6 @@ jstring conveyStr(JNIEnv *env1, JNIEnv *env2, jstring jstr) {
     return dstArray;                                                           \
   }
 
-// 使用宏生成三个函数
 DEFINE_CONVEY_ARRAY(jint, jintArray, GetIntArrayElements,
                     ReleaseIntArrayElements, NewIntArray, SetIntArrayRegion)
 DEFINE_CONVEY_ARRAY(jfloat, jfloatArray, GetFloatArrayElements,
@@ -53,6 +55,44 @@ DEFINE_CONVEY_ARRAY(jfloat, jfloatArray, GetFloatArrayElements,
                     SetFloatArrayRegion)
 DEFINE_CONVEY_ARRAY(jlong, jlongArray, GetLongArrayElements,
                     ReleaseLongArrayElements, NewLongArray, SetLongArrayRegion)
+
+std::vector<std::string> extractStringArray(JNIEnv *env,
+                                            jobjectArray javaArray) {
+  std::vector<std::string> result;
+  if (javaArray == nullptr)
+    return result;
+
+  jsize len = env->GetArrayLength(javaArray);
+  result.reserve(len);
+
+  for (jsize i = 0; i < len; i++) {
+    jstring str = (jstring)env->GetObjectArrayElement(javaArray, i);
+    const char *chars = env->GetStringUTFChars(str, nullptr);
+    result.emplace_back(chars);
+    env->ReleaseStringUTFChars(str, chars);
+    env->DeleteLocalRef(str);
+  }
+  return result;
+}
+jobjectArray createStringArray(JNIEnv *env,
+                               const std::vector<std::string> &vec) {
+  if (vec.empty())
+    return nullptr;
+
+  jclass stringClass = env->FindClass("java/lang/String");
+  jobjectArray result =
+      env->NewObjectArray(static_cast<jsize>(vec.size()), stringClass, nullptr);
+
+  for (size_t i = 0; i < vec.size(); i++) {
+    jstring str = env->NewStringUTF(vec[i].c_str());
+    env->SetObjectArrayElement(result, static_cast<jsize>(i), str);
+    env->DeleteLocalRef(str);
+  }
+  return result;
+}
+jobjectArray conveyStrArray(JNIEnv *env1, JNIEnv *env2, jobjectArray jarr) {
+  return createStringArray(env2, extractStringArray(env1, jarr));
+}
 
 JNIEnv *getEnv(JavaVM *vm) {
   JNIEnv *env = nullptr;
@@ -96,6 +136,14 @@ JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onDestroy(JNIEnv *env,
     return;
   getEnv(oxygen->jvm)
       ->CallVoidMethod(oxygen->object_callback, oxygen->onDestroyID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onExit(JNIEnv *env,
+                                                              jobject thiz) {
+  if (!oxygen->callback_init)
+    return;
+  getEnv(oxygen->jvm)
+      ->CallVoidMethod(oxygen->object_callback, oxygen->onExitID);
 }
 
 JNIEXPORT void JNICALL Java_oxygen_bridge_OxygenBridge_onConfigurationChanged(
@@ -171,7 +219,7 @@ JNIEXPORT jboolean JNICALL Java_oxygen_bridge_OxygenBridge_handleKey(
   if (!oxygen->callback_init)
     return true;
   auto envJ = getEnv(oxygen->jvm);
-  return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleTouchID,
+  return envJ->CallBooleanMethod(oxygen->object_callback, oxygen->handleKeyID,
                                  keyCode, conveyjintArray(env, envJ, intData));
 }
 
@@ -208,17 +256,23 @@ Java_oxygen_api_LauncherBridge_isAndroid(JNIEnv *env, jclass clazz) {
 
 JNIEXPORT jint JNICALL Java_oxygen_api_LauncherBridge_getVersion(JNIEnv *env,
                                                                  jclass clazz) {
+  return getEnv(oxygen->android_jvm)
+      ->CallIntMethod(oxygen->object_OxygenBridge, oxygen->getVersionID);
+  /*
   jclass buildVersionClass =
       getEnv(oxygen->android_jvm)->FindClass("android/os/Build$VERSION");
   jfieldID sdkIntField =
       getEnv(oxygen->android_jvm)
           ->GetStaticFieldID(buildVersionClass, "SDK_INT", "I");
   return getEnv(oxygen->android_jvm)
-      ->GetStaticIntField(buildVersionClass, sdkIntField);
+      ->GetStaticIntField(buildVersionClass, sdkIntField);*/
 }
 
 JNIEXPORT jlong JNICALL
 Java_oxygen_api_LauncherBridge_getNativeHeap(JNIEnv *env, jclass clazz) {
+  return getEnv(oxygen->android_jvm)
+      ->CallLongMethod(oxygen->object_OxygenBridge, oxygen->getNativeHeapID);
+  /*
   jclass debugClass =
       getEnv(oxygen->android_jvm)->FindClass("android/os/Debug");
   jmethodID getNativeHeapAllocatedSize =
@@ -226,6 +280,7 @@ Java_oxygen_api_LauncherBridge_getNativeHeap(JNIEnv *env, jclass clazz) {
           ->GetStaticMethodID(debugClass, "getNativeHeapAllocatedSize", "()J");
   return getEnv(oxygen->android_jvm)
       ->CallStaticLongMethod(debugClass, getNativeHeapAllocatedSize);
+  */
 }
 
 JNIEXPORT jboolean JNICALL Java_oxygen_api_LauncherBridge_openURI(JNIEnv *env,
@@ -259,6 +314,75 @@ Java_oxygen_api_LauncherBridge_getClipboardText(JNIEnv *env, jclass clazz) {
                                                    oxygen->getClipboardTextID));
 }
 
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_showFileChooser(
+    JNIEnv *env, jclass clazz, jboolean open, jstring title, jobject cons,
+    jobject error, jobjectArray extensions) {
+  auto consJ = JNIRefManager::instanceJVM().create(env, cons);
+  auto errorJ = JNIRefManager::instanceJVM().create(env, error);
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(
+      oxygen->object_OxygenBridge, oxygen->showFileChooserID, open,
+      conveyStr(env, envA, title), createCallback([consJ](const char *text) {
+        std::string str(text);
+        auto env = getEnv(oxygen->jvm);
+        env->CallVoidMethod(JNIRefManager::instanceJVM().get(consJ),
+                            oxygen->StrConsInvokeID, createString(env, str));
+      }),
+      createCallback([errorJ]() {
+        getEnv(oxygen->jvm)
+            ->CallVoidMethod(JNIRefManager::instanceJVM().get(errorJ),
+                             oxygen->VoidFuncInvokeID);
+      }),
+      createCallback([consJ, errorJ]() {
+        auto env = getEnv(oxygen->jvm);
+        JNIRefManager::instanceJVM().release(env, consJ);
+        JNIRefManager::instanceJVM().release(env, errorJ);
+      }),
+      conveyStrArray(env, envA, extensions));
+}
+
+JNIEXPORT jboolean JNICALL
+Java_oxygen_api_LauncherBridge_haveExternalPermission(JNIEnv *env,
+                                                      jclass clazz) {
+  return getEnv(oxygen->android_jvm)
+      ->CallBooleanMethod(oxygen->object_OxygenBridge,
+                          oxygen->haveExternalPermissionID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_getExternalPermission(
+    JNIEnv *env, jclass clazz, jint code) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge,
+                       oxygen->getExternalPermissionID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_hide(JNIEnv *env,
+                                                           jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->hideID);
+}
+
+JNIEXPORT void JNICALL
+Java_oxygen_api_LauncherBridge_beginForceLandscape(JNIEnv *env, jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge,
+                       oxygen->beginForceLandscapeID);
+}
+
+JNIEXPORT void JNICALL
+Java_oxygen_api_LauncherBridge_endForceLandscape(JNIEnv *env, jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge,
+                       oxygen->endForceLandscapeID);
+}
+
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_postCacheFile(
+    JNIEnv *env, jclass clazz, jstring str) {
+  auto envA = getEnv(oxygen->android_jvm);
+  envA->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->postCacheFileID,
+                       conveyStr(env, envA, str));
+}
+
 JNIEXPORT void JNICALL
 Java_oxygen_api_LauncherBridge_createsurface(JNIEnv *env, jclass clazz) {
   getEnv(oxygen->android_jvm)
@@ -277,25 +401,28 @@ JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_getTextInput(
     jobject onAccepted, jobject onCanceled) {
   auto envA = getEnv(oxygen->android_jvm);
 
+  auto accepted = JNIRefManager::instanceJVM().create(env, onAccepted);
+  auto cancled = JNIRefManager::instanceJVM().create(env, onCanceled);
   envA->CallVoidMethod(
       oxygen->object_OxygenBridge, oxygen->getTextInputID,
       conveyStr(env, envA, title), conveyStr(env, envA, message),
       conveyStr(env, envA, text), numeric, multiline, maxLength, allowEmpty,
-      createCallback([func = JNIRefManager::instanceJVM().create(
-                          env, onAccepted)](const char *text) {
+      createCallback([accepted](const char *text) {
         std::string str(text);
         auto env = getEnv(oxygen->jvm);
-        env->CallVoidMethod(JNIRefManager::instanceJVM().get(func),
+        env->CallVoidMethod(JNIRefManager::instanceJVM().get(accepted),
                             oxygen->StrConsInvokeID, createString(env, str));
-        JNIRefManager::instanceJVM().release(env, func);
       }),
-      createCallback(
-          [func = JNIRefManager::instanceJVM().create(env, onCanceled)]() {
-            auto env = getEnv(oxygen->jvm);
-            env->CallVoidMethod(JNIRefManager::instanceJVM().get(func),
-                                oxygen->VoidFuncInvokeID);
-            JNIRefManager::instanceJVM().release(env, func);
-          }));
+      createCallback([cancled]() {
+        getEnv(oxygen->jvm)
+            ->CallVoidMethod(JNIRefManager::instanceJVM().get(cancled),
+                             oxygen->VoidFuncInvokeID);
+      }),
+      createCallback([accepted, cancled]() {
+        auto env = getEnv(oxygen->jvm);
+        JNIRefManager::instanceJVM().release(env, accepted);
+        JNIRefManager::instanceJVM().release(env, cancled);
+      }));
 }
 
 JNIEXPORT jboolean JNICALL

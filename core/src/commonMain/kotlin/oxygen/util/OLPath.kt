@@ -6,6 +6,7 @@ object OLPath {
   val filesDir = OS.filesDir()
   val cacheDir = OS.cacheDir()
   val oxygenDir = filesDir.child("oxygen")
+  val oxygenCacheDir = oxygenDir.child("cache")
   val jarFile = oxygenDir.child("test.jar")
   val logFile = oxygenDir.child("last_log.txt")
   val crashDir = oxygenDir.child("crashes")
@@ -18,6 +19,8 @@ object OLPath {
     initPath(crashDir)
     initPath(runtimeDir)
     initPath(javaPath)
+    initPath(oxygenCacheDir)
+    oxygenCacheDir.emptyDirectory()
   }
 
   fun initPath(path: Fi) {
