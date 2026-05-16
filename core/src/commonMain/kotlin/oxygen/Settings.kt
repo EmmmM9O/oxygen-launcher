@@ -50,12 +50,12 @@ class Settings() {
     putDefault(GAME_KEY, asObj(json))
   }
 
-  inline fun <reified  T> initField(key: String, def:T):T{
+  inline fun <reified T> initField(key: String, def: T): T {
     putDefault(key, json.encodeToJsonElement(def).jsonObject)
     return get(key, def)
   }
 
-  fun initJsonFiled(key: String, def:JsonObject):JsonObject{
+  fun initJsonFiled(key: String, def: JsonObject): JsonObject {
     putDefault(key, def)
     return getJsonObject(key) ?: def
   }
@@ -179,11 +179,26 @@ class Settings() {
   fun deepMergeDefault(default: JsonObject, existing: JsonObject): JsonObject {
     val merged = existing.toMap().toMutableMap()
     for ((key, defaultValue) in default) {
-      if (key !in merged) {
-        merged[key] = defaultValue
-      }
+      val existingValue = existing[key]
+      merged[key] =
+          when {
+            existingValue == null -> defaultValue
+            defaultValue is JsonObject && existingValue is JsonObject ->
+                deepMergeDefault(defaultValue, existingValue)
+            !isSameType(defaultValue, existingValue) -> defaultValue
+            else -> existingValue
+          }
     }
     return JsonObject(merged)
+  }
+
+  private fun isSameType(a: JsonElement, b: JsonElement): Boolean {
+    return when (a) {
+      is JsonObject -> b is JsonObject
+      is JsonArray -> b is JsonArray
+      is JsonPrimitive -> b is JsonPrimitive && a.isString == b.isString
+      is JsonNull -> b is JsonNull
+    }
   }
 
   fun remove(key: String) {

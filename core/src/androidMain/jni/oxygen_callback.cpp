@@ -432,6 +432,12 @@ JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_endLoop(JNIEnv *env,
       ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->endLoopID);
 }
 
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_setupInput(JNIEnv *env,
+                                                                 jclass clazz) {
+  getEnv(oxygen->android_jvm)
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->setupInputID);
+}
+
 JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_postCacheFile(
     JNIEnv *env, jclass clazz, jstring str) {
   auto envA = getEnv(oxygen->android_jvm);
@@ -439,10 +445,11 @@ JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_postCacheFile(
                        conveyStr(env, envA, str));
 }
 
-JNIEXPORT void JNICALL
-Java_oxygen_api_LauncherBridge_createsurface(JNIEnv *env, jclass clazz) {
+JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_createsurface(
+    JNIEnv *env, jclass clazz, jboolean create) {
   getEnv(oxygen->android_jvm)
-      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->createsurfaceID);
+      ->CallVoidMethod(oxygen->object_OxygenBridge, oxygen->createsurfaceID,
+                       create);
 }
 
 JNIEXPORT jboolean JNICALL

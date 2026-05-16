@@ -12,7 +12,7 @@ object Core {
   lateinit var logWriter: Writer
   lateinit var launcher: Launcher
   lateinit var platform: Platform
-  lateinit var input: Input
+  var input: Input? = null
   lateinit var settings: Settings
   var jvmInit = false
 }

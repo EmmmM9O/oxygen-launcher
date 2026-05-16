@@ -44,6 +44,7 @@ struct Oxygen {
   jmethodID setGameDefaultID;
   jmethodID startLoopID;
   jmethodID endLoopID;
+  jmethodID setupInputID;
 
   jmethodID loopID;
   jmethodID onWindowFocusChangedID;
@@ -67,5 +68,7 @@ struct Oxygen {
 extern struct Oxygen *oxygen;
 
 [[noreturn]] void nominal_exit(int code);
+
+extern void releaseJNI(JavaVM *vm);
 
 #endif // OXYGEN_H

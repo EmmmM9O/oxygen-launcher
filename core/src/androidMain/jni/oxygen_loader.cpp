@@ -119,6 +119,7 @@ static void *logger_thread(void *) {
 }
 
 [[noreturn]] void nominal_exit(int code) {
+  releaseJNI(oxygen->android_jvm);
   JNIEnv *env = nullptr;
   jint errorCode =
       exitTrap_jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);

@@ -3,7 +3,9 @@ plugins {
   alias(libs.plugins.kotlin.android)
 }
 
-dependencies { implementation(project(":core")) }
+dependencies { 
+  implementation(project(":core"))
+}
 
 kotlin { jvmToolchain(17) }
 

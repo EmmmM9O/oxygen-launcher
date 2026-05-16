@@ -92,7 +92,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     oxygen->openURIID = env->GetMethodID(oxygen->class_OxygenBridge, "openURI",
                                          "(Ljava/lang/String;)Z");
     oxygen->createsurfaceID =
-        env->GetMethodID(oxygen->class_OxygenBridge, "createsurface", "()V");
+        env->GetMethodID(oxygen->class_OxygenBridge, "createsurface", "(Z)V");
 
     oxygen->isFinishingID =
         env->GetMethodID(oxygen->class_OxygenBridge, "isFinishing", "()Z");
@@ -123,19 +123,20 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         oxygen->class_OxygenBridge, "setAllSettings", "(Ljava/lang/String;)V");
     oxygen->setGameSettingsID = env->GetMethodID(
         oxygen->class_OxygenBridge, "setGameSettings", "(Ljava/lang/String;)V");
-    oxygen->setGameDefaultID= env->GetMethodID(
+    oxygen->setGameDefaultID = env->GetMethodID(
         oxygen->class_OxygenBridge, "setGameDefault", "(Ljava/lang/String;)V");
 
-
-    oxygen->getAllSettingsID= env->GetMethodID(
+    oxygen->getAllSettingsID = env->GetMethodID(
         oxygen->class_OxygenBridge, "getAllSettings", "()Ljava/lang/String;");
-    oxygen->getGameSettingsID= env->GetMethodID(
+    oxygen->getGameSettingsID = env->GetMethodID(
         oxygen->class_OxygenBridge, "getGameSettings", "()Ljava/lang/String;");
 
-    oxygen->startLoopID= env->GetMethodID(
-        oxygen->class_OxygenBridge, "startLoop", "()V");
-    oxygen->endLoopID= env->GetMethodID(
-        oxygen->class_OxygenBridge, "endLoop", "()V");
+    oxygen->startLoopID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "startLoop", "()V");
+    oxygen->endLoopID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "endLoop", "()V");
+    oxygen->setupInputID =
+        env->GetMethodID(oxygen->class_OxygenBridge, "setupInput", "()V");
 
     oxygen->getTextInputID = env->GetMethodID(
         oxygen->class_OxygenBridge, "getTextInput",
@@ -192,8 +193,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         env->GetMethodID(oxygen->class_callback, "handleTouch", "([I[F)Z");
     oxygen->handleGenericMotionID = env->GetMethodID(
         oxygen->class_callback, "handleGenericMotion", "([I[F)Z");
-    oxygen->handleKeyID =
-        env->GetMethodID(oxygen->class_callback, "handleKey", "(I[ILjava/lang/String;)Z");
+    oxygen->handleKeyID = env->GetMethodID(oxygen->class_callback, "handleKey",
+                                           "(I[ILjava/lang/String;)Z");
 
     jclass clazz = env->FindClass("oxygen/api/VoidFunc");
     if (clazz == nullptr) {
@@ -212,7 +213,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
   }
   return JNI_VERSION_1_4;
 }
+
 JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
+  LOGI("Oxygen", "JNI Unload {}", (void *)vm);
+  releaseJNI(vm);
+}
+}
+void releaseJNI(JavaVM *vm) {
   if (vm == oxygen->android_jvm) {
     LOGI("Oxygen", "Release Oxygen JNI Android");
     JNIEnv *env = nullptr;
@@ -248,5 +255,4 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     }
     JNIRefManager::instanceJVM().clear(env);
   }
-}
 }

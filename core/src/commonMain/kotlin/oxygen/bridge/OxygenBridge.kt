@@ -59,7 +59,7 @@ class OxygenBridge {
       floatData: FloatArray,
   ): Boolean
 
-  external fun handleKey(keyCode: Int, /*KeyEvent*/ intData: IntArray, characters:String): Boolean
+  external fun handleKey(keyCode: Int, /*KeyEvent*/ intData: IntArray, characters: String): Boolean
 
   @Keep
   fun log(log: String) {
@@ -91,8 +91,8 @@ class OxygenBridge {
   @Keep fun openURI(URI: String): Boolean = Core.platform.openURI(URI)
 
   @Keep
-  fun createsurface(): Unit {
-    Core.platform.createSurface()
+  fun createsurface(create: Boolean): Unit {
+    Core.platform.createSurface(create)
   }
 
   @Keep fun isFinishing(): Boolean = Core.platform.finishing()
@@ -151,13 +151,17 @@ class OxygenBridge {
   @Keep
   fun setAllSettings(json: String): Unit {
     Core.settings.loadFrom(json)
+    Core.settings.flush()
   }
 
   @Keep fun getAllSettings(): String = Core.settings.toJsonString()
 
   @Keep
   fun setGameSettings(json: String): Unit {
-    Core.settings.apply { game = asObj(json) }
+    Core.settings.apply {
+      game = asObj(json)
+      flush()
+    }
   }
 
   @Keep fun getGameSettings(): String = Core.settings.let { it.toJsonString(it.game) }
@@ -177,6 +181,11 @@ class OxygenBridge {
     Core.platform.endLoop()
   }
 
+  @Keep
+  fun setupInput() {
+    Core.platform.setupInput()
+  }
+
   // Input
   @Keep
   fun getTextInput(
@@ -191,7 +200,7 @@ class OxygenBridge {
       onCanceled: Long,
       release: Long,
   ): Unit {
-    Core.input.getTextInput(
+    Core.input?.getTextInput(
         TextInputConfig(
             title,
             message,
@@ -212,26 +221,26 @@ class OxygenBridge {
     )
   }
 
-  @Keep fun isShowingTextInput(): Boolean = Core.input.isShowingTextInput()
+  @Keep fun isShowingTextInput(): Boolean = Core.input?.isShowingTextInput() ?: false
 
   @Keep
   fun setOnscreenKeyboardVisible(visible: Boolean) {
-    Core.input.setOnscreenKeyboardVisible(visible)
+    Core.input?.setOnscreenKeyboardVisible(visible)
   }
 
   @Keep
   fun vibrate(milliseconds: Int) {
-    Core.input.vibrate(milliseconds)
+    Core.input?.vibrate(milliseconds)
   }
 
   @Keep
   fun vibrate(pattern: LongArray, repeat: Int) {
-    Core.input.vibrate(pattern, repeat)
+    Core.input?.vibrate(pattern, repeat)
   }
 
   @Keep
   fun cancelVibrate() {
-    Core.input.cancelVibrate()
+    Core.input?.cancelVibrate()
   }
 
   fun execute() {

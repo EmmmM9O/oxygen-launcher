@@ -36,10 +36,12 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   lateinit var view: RenderSurfaceView
   lateinit var input: AndroidInput
   @Volatile var surfaceCreated = false
+  @Volatile var needSurface = false
   private val eventListeners = mutableMapOf<Int, AndroidEventListener>()
   private val cacheFiles = mutableMapOf<String, Uri>()
   private var lastEventNumber = 43
   var loopJob: Job? = null
+  var job: Job? = null
 
   fun init() {
     val errHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -78,21 +80,7 @@ open class AndroidActivity : AppCompatActivity(), Platform {
         Log.err("[OxygenL] Failed to create AndroidVisibilityListener \n ${e.trace()}")
       }
     }
-  }
 
-  fun runJVM() {
-    lifecycleScope.launch(dispather) {
-      Core.bridge = OxygenBridge()
-      Core.bridge.execute()
-      Core.launcher = JvmLauncher()
-      Core.launcher.launch()
-      finishAffinity()
-    }
-    while (!surfaceCreated) {}
-    Log.info("[OxygenL] Create Surface")
-    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
-    input = AndroidInput(this, view)
-    Core.input = input
     try {
       requestWindowFeature(Window.FEATURE_NO_TITLE)
     } catch (ex: Exception) {
@@ -106,8 +94,29 @@ open class AndroidActivity : AppCompatActivity(), Platform {
       )
       clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
     }
+  }
+
+  fun runJVM() {
+    job =
+        lifecycleScope.launch(dispather) {
+          Core.bridge = OxygenBridge()
+          Core.bridge.execute()
+          Core.launcher = JvmLauncher()
+          Core.launcher.launch()
+        }
+    while (!surfaceCreated) {}
+    if (!needSurface) return
+    Log.info("[OxygenL] Create Surface")
+    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
 
     setContentView(view, createLayoutParams())
+  }
+
+  override fun setupInput() {
+    handler.post {
+      input = AndroidInput(this, view)
+      Core.input = input
+    }
   }
 
   protected fun createLayoutParams() =
@@ -193,7 +202,13 @@ open class AndroidActivity : AppCompatActivity(), Platform {
   }
 
   override fun killProcess() {
+    loopJob?.cancel()
+    job?.cancel()
+    dispather.close()
+    Log.info("Game Exit")
+    Log.info("Kill process")
     android.os.Process.killProcess(android.os.Process.myPid())
+    finishAffinity()
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -241,6 +256,8 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     Log.info("[Oxygen Launcher] Destory")
     loopJob?.cancel()
     if (Core.jvmInit) Core.bridge.onDestroy()
+    runBlocking { job?.cancelAndJoin() }
+    Log.info("Game Exit")
     dispather.close()
     super.onDestroy()
     System.exit(0)
@@ -258,8 +275,9 @@ open class AndroidActivity : AppCompatActivity(), Platform {
 
   override fun openAssets(path: String): InputStream = getAssets().open(path)
 
-  override fun createSurface(): Unit {
+  override fun createSurface(create: Boolean): Unit {
     surfaceCreated = true
+    needSurface = create
   }
 
   override fun finishing(): Boolean = isFinishing()

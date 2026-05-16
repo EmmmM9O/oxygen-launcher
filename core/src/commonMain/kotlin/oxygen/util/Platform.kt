@@ -2,6 +2,7 @@ package oxygen.util
 
 import java.io.*
 
+// Thanks to sdl there are some unused functions
 interface Platform {
   fun killProcess()
 
@@ -9,25 +10,25 @@ interface Platform {
 
   fun getNativeHeap(): Long
 
-  fun getClipboardText(): String?
+  fun getClipboardText(): String? = ""
 
-  fun setClipboardText(contents: String): Unit
+  fun setClipboardText(contents: String): Unit {}
 
-  fun openFolder(file: String): Boolean
+  fun openFolder(file: String): Boolean = true
 
-  fun openURI(URI: String): Boolean
+  fun openURI(URI: String): Boolean = true
 
   fun symlink(target: String, link: String): Unit
 
   fun openAssets(path: String): InputStream
 
-  fun createSurface(): Unit
+  fun createSurface(create: Boolean): Unit
 
   fun finishing(): Boolean
 
-  fun beginForceLandscape(): Unit
+  fun beginForceLandscape(): Unit {}
 
-  fun endForceLandscape(): Unit
+  fun endForceLandscape(): Unit {}
 
   fun showFileChooser(
       open: Boolean,
@@ -36,17 +37,19 @@ interface Platform {
       error: (String, String) -> Unit,
       finish: () -> Unit,
       vararg extensions: String,
-  )
+  ) {}
 
-  fun postCacheFile(uri: String): Unit
+  fun postCacheFile(uri: String): Unit {}
 
-  fun haveExternalPermission(): Boolean
+  fun haveExternalPermission(): Boolean = false
 
-  fun getExternalPermission(code: Int): Unit
+  fun getExternalPermission(code: Int): Unit {}
 
-  fun hide(): Unit
+  fun hide(): Unit {}
 
   fun startLoop(): Unit
 
   fun endLoop(): Unit
+
+  fun setupInput(): Unit {}
 }
