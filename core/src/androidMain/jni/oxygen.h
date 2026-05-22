@@ -45,6 +45,8 @@ struct Oxygen {
   jmethodID startLoopID;
   jmethodID endLoopID;
   jmethodID setupInputID;
+  jmethodID javaInfoID;
+  jmethodID appInfoID;
 
   jmethodID loopID;
   jmethodID onWindowFocusChangedID;

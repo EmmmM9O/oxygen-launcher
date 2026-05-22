@@ -14,9 +14,10 @@ import android.system.Os
 import android.telephony.*
 import android.view.*
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.*
 import androidx.core.app.*
 import androidx.core.content.*
+import androidx.core.content.pm.*
 import androidx.lifecycle.lifecycleScope
 import java.io.*
 import java.lang.Thread.*
@@ -110,6 +111,19 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
 
     setContentView(view, createLayoutParams())
+  }
+
+  override fun appInfo(): String {
+    val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+    val appName = packageManager.getApplicationLabel(applicationInfo).toString()
+    val packageInfo = packageManager.getPackageInfo(packageName, 0)
+    val versionName = packageInfo.versionName
+    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      PackageInfoCompat.getLongVersionCode(packageInfo)
+    }else{
+      packageInfo.versionCode.toLong()
+    }
+    return "appName=\"$appName\"\nversionName=\"$versionName\"\nversionCode=\"$versionCode\""
   }
 
   override fun setupInput() {

@@ -398,6 +398,22 @@ Java_oxygen_api_LauncherBridge_getAllSettings(JNIEnv *env, jclass clazz) {
                                                    oxygen->getAllSettingsID));
 }
 
+JNIEXPORT jstring JNICALL
+Java_oxygen_api_LauncherBridge_javaInfo(JNIEnv *env, jclass clazz) {
+  auto envA = getEnv(oxygen->android_jvm);
+  return conveyStr(envA, env,
+                   (jstring)envA->CallObjectMethod(oxygen->object_OxygenBridge,
+                                                   oxygen->javaInfoID));
+}
+
+JNIEXPORT jstring JNICALL Java_oxygen_api_LauncherBridge_appInfo(JNIEnv *env,
+                                                                 jclass clazz) {
+  auto envA = getEnv(oxygen->android_jvm);
+  return conveyStr(envA, env,
+                   (jstring)envA->CallObjectMethod(oxygen->object_OxygenBridge,
+                                                   oxygen->appInfoID));
+}
+
 JNIEXPORT void JNICALL Java_oxygen_api_LauncherBridge_setGameSettings(
     JNIEnv *env, jclass clazz, jstring text) {
   auto envA = getEnv(oxygen->android_jvm);

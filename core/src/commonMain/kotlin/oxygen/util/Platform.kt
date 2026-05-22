@@ -52,4 +52,6 @@ interface Platform {
   fun endLoop(): Unit
 
   fun setupInput(): Unit {}
+
+  fun appInfo(): String = ""
 }

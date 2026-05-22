@@ -138,6 +138,11 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     oxygen->setupInputID =
         env->GetMethodID(oxygen->class_OxygenBridge, "setupInput", "()V");
 
+    oxygen->appInfoID= env->GetMethodID(
+        oxygen->class_OxygenBridge, "appInfo", "()Ljava/lang/String;");
+    oxygen->javaInfoID= env->GetMethodID(
+        oxygen->class_OxygenBridge, "javaInfo", "()Ljava/lang/String;");
+
     oxygen->getTextInputID = env->GetMethodID(
         oxygen->class_OxygenBridge, "getTextInput",
         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZIZJJJ)V");

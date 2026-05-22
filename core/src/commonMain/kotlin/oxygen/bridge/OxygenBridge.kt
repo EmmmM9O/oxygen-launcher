@@ -4,6 +4,7 @@ import java.io.*
 import oxygen.*
 import oxygen.input.*
 import oxygen.util.*
+import oxygen.launcher.*
 
 class OxygenBridge {
   external fun setBridge(bridge: OxygenBridge): Unit
@@ -242,6 +243,12 @@ class OxygenBridge {
   fun cancelVibrate() {
     Core.input?.cancelVibrate()
   }
+
+  @Keep
+  fun javaInfo(): String = JreManager.getRelease(OLPath.javaPath)
+
+  @Keep
+  fun appInfo(): String = Core.platform.appInfo()
 
   fun execute() {
     setBridge(this)
