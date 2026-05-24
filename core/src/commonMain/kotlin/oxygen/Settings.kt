@@ -218,6 +218,7 @@ data class LauncherConfig(
         "-XX:+AlwaysPreTouch -XX:+UseG1GC -XX:MaxGCPauseMillis=130 -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:G1MixedGCLiveThresholdPercent=75 -XX:G1HeapWastePercent=5 -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem",
     val useWakelock: Boolean = false,
     val hideStatusBar: Boolean = true,
+    val displayCutout: Boolean = true,
     val useImmersiveMode: Boolean = true,
     val redirectStdio: Boolean = false,
     val setupExitTrap: Boolean = true,

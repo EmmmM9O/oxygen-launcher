@@ -95,6 +95,15 @@ open class AndroidActivity : AppCompatActivity(), Platform {
       )
       clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
     }
+
+    if (lc.displayCutout) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val lp = window.attributes
+        lp.layoutInDisplayCutoutMode =
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        window.attributes = lp
+      }
+    }
   }
 
   fun runJVM() {
@@ -108,9 +117,24 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     while (!surfaceCreated) {}
     if (!needSurface) return
     Log.info("[OxygenL] Create Surface")
-    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
+    val rootLayout = FrameLayout(this)
+    rootLayout.fitsSystemWindows = false
+    setContentView(rootLayout)
 
-    setContentView(view, createLayoutParams())
+    window.decorView.fitsSystemWindows = false
+
+    view = RenderSurfaceView(this, FillResolutionStrategy(), JvmRenderer(Core.bridge))
+    view.fitsSystemWindows = false
+
+    view.layoutParams =
+        FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT,
+        )
+
+    view.clipToOutline = false
+
+    rootLayout.addView(view)
   }
 
   override fun appInfo(): String {
@@ -118,11 +142,12 @@ open class AndroidActivity : AppCompatActivity(), Platform {
     val appName = packageManager.getApplicationLabel(applicationInfo).toString()
     val packageInfo = packageManager.getPackageInfo(packageName, 0)
     val versionName = packageInfo.versionName
-    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      PackageInfoCompat.getLongVersionCode(packageInfo)
-    }else{
-      packageInfo.versionCode.toLong()
-    }
+    val versionCode =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          PackageInfoCompat.getLongVersionCode(packageInfo)
+        } else {
+          packageInfo.versionCode.toLong()
+        }
     return "appName=\"$appName\"\nversionName=\"$versionName\"\nversionCode=\"$versionCode\""
   }
 
@@ -132,13 +157,6 @@ open class AndroidActivity : AppCompatActivity(), Platform {
       Core.input = input
     }
   }
-
-  protected fun createLayoutParams() =
-      FrameLayout.LayoutParams(
-              ViewGroup.LayoutParams.MATCH_PARENT,
-              ViewGroup.LayoutParams.MATCH_PARENT,
-          )
-          .apply { gravity = Gravity.CENTER }
 
   fun formatMemory(bytes: Long): String = "${bytes / (1024 * 1024)} MB"
 
