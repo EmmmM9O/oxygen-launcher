@@ -18,8 +18,19 @@ import oxygen.bridge.*
 import oxygen.input.*
 import oxygen.surfaceview.*
 import oxygen.util.*
+import androidx.activity.result.contract.*
 
 class MainActivity : AndroidActivity() {
+  private var dialog: AlertDialog? = null
+  private val pickFileLauncher = registerForActivityResult(
+    ActivityResultContracts.OpenDocument()
+  ) { uri: Uri? ->
+    uri?.let {
+      contentResolver.openInputStream(uri)!!.use { input ->
+        OLPath.gameJar.write().use { output -> input.copyTo(output) }
+      }
+    }
+  }
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     init()
@@ -42,21 +53,59 @@ class MainActivity : AndroidActivity() {
     )
     Log.info("[OxygenL][CPU] Cores : ${runtime.availableProcessors()}")
     JreManager.init()
+    if(JreManager.java == false){
+      dialog = AlertDialog.Builder(this)
+                  .setTitle(R.string.java)
+                              .setMessage(R.string.java_install)
+                                          .setCancelable(false) 
+                                          .show()
+    }
     JreManager.install()
+    dialog?.dismiss()
     Log.info("[OxygenL][IN JRE]:RELEASE\n${JreManager.getRelease(OLPath.javaPath)}")
 
-    if (!OLPath.jarFile.exists()) {
-      Log.info("${OLPath.jarFile.absolutePath()} Not exists")
+    if (!OLPath.gameJar.exists() && !Core.settings.launcher.skipCheckJar) {
+      Log.info("${OLPath.gameJar.absolutePath()} Not exists")
       AlertDialog.Builder(this)
           .setTitle(R.string.jar_unfound)
-          .setMessage(getString(R.string.jar_unfound_message, OLPath.jarFile.absolutePath()))
+          .setMessage(getString(R.string.jar_unfound_message, OLPath.gameJar.absolutePath()))
+          .setPositiveButton(R.string.button_ignore) { dialog, _ ->
+            Core.settings.launcher = Core.settings.launcher.copy(skipCheckJar = true)
+	    dialog.dismiss()
+          }
+          .setPositiveButton(R.string.button_import) { dialog, _ ->
+            pickFileLauncher.launch(arrayOf("application/java-archive"))
+	    dialog.dismiss()
+          }
           .setPositiveButton(R.string.button_open) { dialog, _ ->
-            openFolder(OLPath.jarFile.absolutePath())
+            openFolder(OLPath.gameJar.parent().absolutePath())
+	    dialog.dismiss()
           }
           .setPositiveButton(getString(R.string.button_confirm)) { dialog, _ -> dialog.dismiss() }
           .show()
       return
     }
     runJVM()
+  }
+  override fun onDestroy() {
+    super.onDestroy()
+    dialog?.dismiss()
+    dialog = null
+  }
+  override fun handleCrash(code: Int) {
+    val dia = AlertDialog.Builder(this)
+          .setTitle(R.string.crash_title)
+          .setMessage(getString(R.string.crash_message, code))
+          .setPositiveButton(R.string.button_replace) { dialog, _ ->
+            pickFileLauncher.launch(arrayOf("application/java-archive"))
+          }
+          .setPositiveButton(R.string.button_log) { dialog, _ ->
+            openFolder(OLPath.logFile.absolutePath())
+          }
+          .setPositiveButton(getString(R.string.button_confirm)) { dialog, _ -> dialog.dismiss() }
+    .show()
+    dia.setOnDismissListener {
+      killProcess()
+    }
   }
 }

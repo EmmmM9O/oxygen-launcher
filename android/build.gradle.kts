@@ -30,7 +30,7 @@ android {
     versionCode = 1
     versionName = "1.0"
     multiDexEnabled = true
-    ndk { abiFilters += listOf("arm64-v8a") }
+    ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
   }
 
   compileOptions {

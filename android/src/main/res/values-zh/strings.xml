@@ -3,6 +3,10 @@
   <string name="app_name">Oxygen Launcher</string>
   <string name="jar_unfound">Jar文件不存在</string>
   <string name="jar_unfound_message">Jar文件 %s 不存在</string>
+  <string name="button_ignore">忽略</string>
   <string name="button_open">打开</string>
   <string name="button_confirm">确定</string>
+  <string name="java">Java</string>
+  <string name="java_install">Java安装中…</string>
+  <string name="button_import">导入</string>
 </resources>

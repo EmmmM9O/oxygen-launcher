@@ -48,7 +48,7 @@ android {
   defaultConfig {
     minSdk = 24
     multiDexEnabled = true
-    ndk { abiFilters += listOf("arm64-v8a") }
+    ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     externalNativeBuild { cmake { arguments += "-DANDROID_STL=c++_shared" } }
   }
 

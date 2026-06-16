@@ -6,6 +6,10 @@ import java.io.*
 interface Platform {
   fun killProcess()
 
+  fun handleCrash(code: Int) {
+    killProcess()
+  }
+
   fun getVersion(): Int
 
   fun getNativeHeap(): Long

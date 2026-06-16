@@ -72,8 +72,8 @@ class OxygenBridge {
     if (code != 0) {
       // TODO crash activity
       Log.err("JVM crashed! code ${code}")
-    }
-    Core.platform.killProcess()
+      Core.platform.handleCrash(code)
+    } else Core.platform.killProcess()
   }
 
   @Keep fun getVersion(): Int = Core.platform.getVersion()

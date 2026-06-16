@@ -3,6 +3,14 @@
   <string name="app_name">Oxygen Launcher</string>
   <string name="jar_unfound">Jar UnFound</string>
   <string name="jar_unfound_message">Jar file %s not exisis</string>
+  <string name="button_ignore">Ignore</string>
   <string name="button_open">Open</string>
   <string name="button_confirm">OK</string>
+  <string name="java">Java</string>
+  <string name="java_install">Java Installing…</string>
+  <string name="button_import">Import</string>
+  <string name="crash_title">Crash</string>
+  <string name="crash_message">Jvm crash code %d</string>
+  <string name="button_log">Open Log</string>
+  <string name="button_replace">Replace Jar</string>
 </resources>

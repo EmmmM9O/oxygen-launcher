@@ -5,10 +5,10 @@ import oxygen.*
 object OLPath {
   val filesDir = OS.filesDir()
   val cacheDir = OS.cacheDir()
+  val gameJar = filesDir.child("Mindustry.jar")
   val oxygenDir = filesDir.child("oxygen")
   val settingsFile = oxygenDir.child("settings.json")
   val oxygenCacheDir = oxygenDir.child("cache")
-  val jarFile = oxygenDir.child("game.jar")
   val logFile = oxygenDir.child("last_log.txt")
   val crashDir = oxygenDir.child("crashes")
   val runtimeDir = OS.runtimeDir()
@@ -22,6 +22,8 @@ object OLPath {
     initPath(javaPath)
     initPath(oxygenCacheDir)
     oxygenCacheDir.emptyDirectory()
+    PlaceholderResolver.put("HOME", filesDir.absolutePath())
+    PlaceholderResolver.put("JAVA", javaPath.absolutePath())
   }
 
   fun initPath(path: Fi) {

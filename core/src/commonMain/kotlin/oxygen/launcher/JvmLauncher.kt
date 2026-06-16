@@ -12,7 +12,7 @@ class JvmLauncher : Launcher() {
     FLog.log("===Launch JVM===")
     // TODO
     return launchJvm(
-        listOf("-jar", OLPath.jarFile.absolutePath()),
+        PlaceholderResolver.resolve(Core.settings.launcher.directArgs).toList(),
         Core.settings.launcher.userArgs,
     )
   }

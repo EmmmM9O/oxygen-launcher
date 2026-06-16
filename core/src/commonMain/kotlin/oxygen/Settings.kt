@@ -216,6 +216,8 @@ class Settings() {
 data class LauncherConfig(
     val userArgs: String =
         "-XX:+AlwaysPreTouch -XX:+UseG1GC -XX:MaxGCPauseMillis=130 -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:G1MixedGCLiveThresholdPercent=75 -XX:G1HeapWastePercent=5 -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem",
+    val directArgs: Array<String> = arrayOf("-jar", "\${HOME}/Mindustry.jar"),
+    val skipCheckJar: Boolean = false,
     val useWakelock: Boolean = false,
     val hideStatusBar: Boolean = true,
     val displayCutout: Boolean = true,
