@@ -1,6 +1,6 @@
 # Oxygen Launcher
 
-一个用于在 Android 设备上启动 **Mindustry Java 版** 的启动器项目。
+一个用于在 Android 设备上启动 **Mindustry** 的启动器项目。
 
 它的整体思路类似 [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)：在 Android 上准备运行时环境，解压并管理随应用分发的 JRE，然后通过本地桥接层启动 `Mindustry.jar`。
 
@@ -90,7 +90,3 @@ gradle/    Gradle Wrapper 与版本配置
 - `Mindustry.jar` 的检测与下载流程
 
 目前可在仓库的 Release 页面获取调试构建版本。
-
-## 说明
-
-Mindustry 及其相关资源的版权归原作者与对应项目所有。本仓库主要提供启动器实现，不等同于游戏本体本身。

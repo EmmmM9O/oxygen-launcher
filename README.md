@@ -1,6 +1,6 @@
 # Oxygen Launcher
 
-An Android launcher project for running **Mindustry Java Edition**.
+An Android launcher project for running **Mindustry**.
 
 Its overall approach is similar to [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher): prepare a runtime environment on Android, unpack and manage the bundled JRE, and then launch `Mindustry.jar` through a local bridge layer.
 
@@ -92,7 +92,3 @@ If you are reading the codebase, the most relevant parts are usually:
 - `Mindustry.jar` detection and download flow
 
 Debug builds are currently available from the repository Releases page.
-
-## Notice
-
-Mindustry and its related assets belong to their original authors and projects. This repository mainly provides the launcher implementation and is not the game itself.
