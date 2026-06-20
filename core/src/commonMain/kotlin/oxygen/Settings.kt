@@ -1,5 +1,6 @@
 package oxygen
 
+import java.util.*
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.*
@@ -222,6 +223,13 @@ data class LauncherConfig(
     val hideStatusBar: Boolean = true,
     val displayCutout: Boolean = true,
     val useImmersiveMode: Boolean = true,
-    val redirectStdio: Boolean = false,
+    val redirectStdio: Boolean = true,
     val setupExitTrap: Boolean = true,
+    val enableMirror: Boolean = isSimplifiedChinese(),
+    val mirror: String = "https://git.yylx.win/",
 )
+
+fun isSimplifiedChinese(): Boolean {
+  val locale = Locale.getDefault()
+  return locale.language == "zh" && (locale.country == "CN" || locale.country == "SG")
+}

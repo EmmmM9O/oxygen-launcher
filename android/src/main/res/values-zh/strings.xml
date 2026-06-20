@@ -9,4 +9,8 @@
   <string name="java">Java</string>
   <string name="java_install">Java安装中…</string>
   <string name="button_import">导入</string>
+  <string name="chooser">选择</string>
+  <string name="download">下载Mindustry</string>
+  <string name="finish">处理完成.请重启游戏</string>
+  <string name="wait">请等待</string>
 </resources>

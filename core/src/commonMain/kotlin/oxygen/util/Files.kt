@@ -187,6 +187,54 @@ open class Fi {
     }
   }
 
+  fun write(input: InputStream, append: Boolean) {
+    try {
+      write(append).use { output -> input.copyTo(output) }
+    } catch (ex: Exception) {
+      throw RuntimeException("Error stream writing to file: $file ($type)", ex)
+    } finally {
+      input.close()
+    }
+  }
+
+  fun copyTo(dest: Fi) {
+    if (!isDirectory()) {
+      val target = if (dest.isDirectory()) dest.child(name()) else dest
+      copyFile(this, target)
+      return
+    }
+    if (dest.exists()) {
+      if (!dest.isDirectory())
+          throw RuntimeException("Destination exists but is not a directory: $dest")
+    } else {
+      dest.mkdirs()
+      if (!dest.isDirectory())
+          throw RuntimeException("Destination directory cannot be created: $dest")
+    }
+    copyDirectory(this, dest.child(name()))
+  }
+
+  private fun copyFile(source: Fi, dest: Fi) {
+    try {
+      dest.write(source.read(), false)
+    } catch (ex: Exception) {
+      throw RuntimeException(
+          "Error copying source file: ${source.file} (${source.type})\n" +
+              "To destination: ${dest.file} (${dest.type})",
+          ex,
+      )
+    }
+  }
+
+  private fun copyDirectory(sourceDir: Fi, destDir: Fi) {
+    destDir.mkdirs()
+    val files = sourceDir.list()
+    for (srcFile in files) {
+      val destFile = destDir.child(srcFile.name())
+      if (srcFile.isDirectory()) copyDirectory(srcFile, destFile) else copyFile(srcFile, destFile)
+    }
+  }
+
   fun writer(append: Boolean): Writer = writer(append, "UTF-8")
 
   fun writer(append: Boolean, charset: String?): Writer {

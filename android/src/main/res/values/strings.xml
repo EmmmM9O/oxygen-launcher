@@ -13,4 +13,8 @@
   <string name="crash_message">Jvm crash code %d</string>
   <string name="button_log">Open Log</string>
   <string name="button_replace">Replace Jar</string>
+  <string name="chooser">Choose One</string>
+  <string name="download">Download Mindustry</string>
+  <string name="finish">Process Finish.Please Restart</string>
+  <string name="wait">Please Wait</string>
 </resources>
