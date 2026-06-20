@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.android.library)
@@ -34,8 +36,8 @@ android {
   buildToolsVersion = "35.0.0"
   compileSdk = 35
   ndkVersion = "29.0.14206865"
-  ndkPath = "/home/stellarcus/Android/android-ndk-r29/"
 
+  project.extra.get("local").let { it as Properties }.getProperty("lndk.dir")?.let { ndkPath = it }
   buildFeatures { prefab = true }
 
   packaging {
